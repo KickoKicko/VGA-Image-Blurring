@@ -10,10 +10,6 @@
 extern void print(const char *);
 extern void print_dec(unsigned int);
 extern void display_string(char *);
-extern void time2string(char *, int);
-extern void tick(int *);
-extern void delay(int);
-extern int nextprime(int);
 extern void enable_interrupt(void);
 
 int mytime = 0;
