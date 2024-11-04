@@ -267,5 +267,6 @@ int main(void)
   //   *control = 0b111;
   // }
   //}
+  display_string("hej");
   vgaTest();
 }
