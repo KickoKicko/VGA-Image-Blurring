@@ -357,9 +357,9 @@ int main(int argc, char *argv[])
     // Convert to grayscale
     // convertToGrayscale(pixelData, width, height);
     // gaussianBlur(pixelData, width, height, 15, 2.5);
-    // motionBlur(pixelData, width, height, 60);
+    motionBlur(pixelData, width, height, 150);
 
-    sharpen(pixelData, width, height, 1.3);
+    // sharpen(pixelData, width, height, 1.3);
 
     // Write the modified image to a new BMP file
     FILE *outputFile = fopen(outputFilePath, "wb");
