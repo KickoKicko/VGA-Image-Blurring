@@ -60,12 +60,13 @@ int main(int argc, char *argv[])
 {
     if (argc < 3)
     {
-        fprintf(stderr, "Usage: %s <input_bmp_file> <output_bmp_file>\n", argv[0]);
+        fprintf(stderr, "Usage: %s <input_bmp_file> <kernel>\n", argv[0]);
         return 1;
     }
 
     const char *inputFilePath = argv[1];
-    const char *outputFilePath = argv[2];
+    const char *outputFilePath = "output.bmp";
+    const char *kernel = argv[2];
 
     // Open the BMP file
     FILE *inputFile = fopen(inputFilePath, "rb");
@@ -97,12 +98,26 @@ int main(int argc, char *argv[])
     fread(pixelData, sizeof(uint8_t), rowSize * height, inputFile);
     fclose(inputFile);
 
-    // Convert to grayscale
-    // convertToGrayscale(pixelData, width, height);
-    // gaussianBlur(pixelData, width, height, 15, 2.5);
-    motionBlur(pixelData, width, height, 150);
-
-    // sharpen(pixelData, width, height, 1.3);
+    if (strcmp(kernel, "motionBlur") == 0)
+    {
+        motionBlur(pixelData, width, height, 150);
+    }
+    else if (strcmp(kernel, "grayScale") == 0)
+    {
+        convertToGrayscale(pixelData, width, height);
+    }
+    else if (strcmp(kernel, "gaussianBlur") == 0)
+    {
+        gaussianBlur(pixelData, width, height, 15, 2.5);
+    }
+    else if (strcmp(kernel, "boxBlur") == 0)
+    {
+        boxBlur(pixelData, width, height, 7);
+    }
+    else if (strcmp(kernel, "sharpen") == 0)
+    {
+        sharpen(pixelData, width, height, 1.3);
+    }
 
     // Write the modified image to a new BMP file
     FILE *outputFile = fopen(outputFilePath, "wb");
