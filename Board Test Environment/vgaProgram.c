@@ -12,7 +12,6 @@ void labinit(void)
 int vgaTest()
 {
   volatile char *VGA = (volatile char *)0x08000000;
-
   int count = 0;
   char c = 0;
   for (int i = 0; i < 320 * 240 * 2; i++)
