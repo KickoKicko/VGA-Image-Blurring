@@ -64,10 +64,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // Create a buffer to store the full file path
-    char inputFilePath[1024];
-
-    snprintf(inputFilePath, sizeof(inputFilePath), "../images/", argv[1]);
+    const char *inputFilePath = argv[1];
     const char *outputFilePath = "output.bmp";
     const char *kernel = argv[2];
 

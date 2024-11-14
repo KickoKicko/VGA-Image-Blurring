@@ -4,10 +4,10 @@
 CC = gcc
 
 # Output file
-OUTPUT = 24bitmapProcessing
+OUTPUT = processing24bitmap
 
 # Source files
-SOURCES = 24bitmapProcessing.c 24bitReferenceKernels.c
+SOURCES = processing24bitmap.c 24bitReferenceKernels.c
 
 # Target to build the executable
 $(OUTPUT): $(SOURCES)
