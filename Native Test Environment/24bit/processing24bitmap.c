@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <math.h>
-#include "referenceKernels.h"
+#include "24bitReferenceKernels.h"
 
 #pragma pack(push, 1)
 typedef struct
@@ -64,7 +64,10 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    const char *inputFilePath = argv[1];
+    // Create a buffer to store the full file path
+    char inputFilePath[1024];
+
+    snprintf(inputFilePath, sizeof(inputFilePath), "../images/", argv[1]);
     const char *outputFilePath = "output.bmp";
     const char *kernel = argv[2];
 

@@ -4,10 +4,10 @@
 CC = gcc
 
 # Output file
-OUTPUT = bitmapTest
+OUTPUT = processing8bitmap
 
 # Source files
-SOURCES = bitmapTest.c referenceKernels.c
+SOURCES = processing8bitmap.c 8bitReferenceKernels.c
 
 # Target to build the executable
 $(OUTPUT): $(SOURCES)

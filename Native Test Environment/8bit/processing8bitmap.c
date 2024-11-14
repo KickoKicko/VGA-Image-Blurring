@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-
-#include "referenceKernels.h"
+#include <math.h>
+#include "8bitReferenceKernels.h"
 
 #define M_PI 3.14159265358979323846
 
