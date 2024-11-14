@@ -216,6 +216,51 @@ void motionBlur(uint8_t *pixelData, int width, int height, int blurLength)
     free(blurredData); // Free the allocated memory
 }
 
+#include <stdint.h>
+
+void motionBlur8(uint8_t *pixelData, int width, int height, int blurLength)
+{
+    // Temporary array to store blurred pixels
+    uint8_t *tempData = (uint8_t *)malloc(width * height * sizeof(uint8_t));
+
+    // Check for allocation failure
+    if (tempData == NULL)
+    {
+        return; // Exit if memory allocation fails
+    }
+
+    // Process each row individually to apply a horizontal motion blur effect
+    for (int y = 0; y < height; y++)
+    {
+        for (int x = 0; x < width; x++)
+        {
+            // Copy the current pixel index
+            uint8_t pixelValue = pixelData[y * width + x];
+
+            // Apply blur by copying this pixel index to the right up to blurLength
+            for (int k = 0; k < blurLength; k++)
+            {
+                int targetX = x + k;
+
+                // Ensure we do not go out of bounds
+                if (targetX < width)
+                {
+                    tempData[y * width + targetX] = pixelValue;
+                }
+            }
+        }
+    }
+
+    // Copy the blurred data back into the original pixel data
+    for (int i = 0; i < width * height; i++)
+    {
+        pixelData[i] = tempData[i];
+    }
+
+    // Free the temporary data array
+    free(tempData);
+}
+
 void boxBlur(uint8_t *pixelData, int width, int height, int blurSize)
 {
     int rowSize = (width * 3 + 3) & ~3;                         // Rows are padded to 4-byte boundaries
