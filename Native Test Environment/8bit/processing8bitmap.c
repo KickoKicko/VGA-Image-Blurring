@@ -34,7 +34,7 @@ typedef struct
 #pragma pack(pop)
 
 // Function to apply motion blur
-void motionBlur9(uint8_t *pixelData, int width, int height, int rowSize, uint8_t *colorPalette, int blurLength, float angle)
+void motionBlur(uint8_t *pixelData, int width, int height, int rowSize, uint8_t *colorPalette, int blurLength, float angle)
 {
     // Temporary array to store the blurred data
     uint8_t *tempData = (uint8_t *)malloc(rowSize * height);
@@ -238,7 +238,7 @@ int main(int argc, char *argv[])
 
     // int blurLength = 15; // The length of the blur effect (number of pixels)
     // float angle = 45.0f; // The direction of the motion blur (in degrees)
-    // motionBlur9(pixelData, width, height, rowSize, colorPalette, blurLength, angle);
+    // motionBlur(pixelData, width, height, rowSize, colorPalette, blurLength, angle);
 
     // Open output BMP file
     FILE *outputFile = fopen(outputFilePath, "wb");
