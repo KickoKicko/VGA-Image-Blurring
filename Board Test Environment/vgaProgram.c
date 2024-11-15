@@ -1,3 +1,5 @@
+#include <stdint.h>
+
 extern void print(const char *);
 extern void print_dec(unsigned int);
 extern void display_string(char *);
@@ -9,19 +11,25 @@ void labinit(void)
   // enable_interrupt();
 }
 
-int vgaTest()
-{
-  volatile char *VGA = (volatile char *)0x08000000;
-  int count = 0;
-  char c = 0;
-  for (int i = 0; i < 320 * 240 * 2; i++)
+uint8_t tempCreatePixelData(){
+  uint8_t tempPixelData[320*240];
+  for (int i = 0; i < 320 * 240; i++)
   {
-    VGA[i] = i;
+    tempPixelData[i] = i;
+  }
+  return *tempPixelData;
+}
+
+void updateVGADisplay(uint8_t *pixelData){
+  volatile char *VGA = (volatile char *)0x08000000;
+  for (int i = 0; i < 320 * 240; i++)
+  {
+    VGA[i] = pixelData[i];
   }
 }
 
 /* Your code goes into main as well as any needed functions. */
 int main(void)
 {
-  vgaTest();
+  updateVGADisplay(tempCreatePixelData());
 }
