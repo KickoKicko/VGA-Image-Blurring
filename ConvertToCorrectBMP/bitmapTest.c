@@ -21,7 +21,7 @@ typedef struct
     int32_t bV5Width;
     int32_t bV5Height;
     uint16_t bV5Planes;
-    uint16_t bV5BitCount;
+    uint16_t bV5BitCount;//Think this chooses the amount of bits for each pixel
     uint32_t bV5Compression;
     uint32_t bV5SizeImage;
     int32_t bV5XPelsPerMeter;
@@ -46,6 +46,13 @@ typedef struct
     uint32_t bV5ProfileSize;
     uint32_t bV5Reserved;
 } BMPInfoHeader;
+
+typedef struct {
+    uint8_t rgbBlue;
+    uint8_t rgbGreen;
+    uint8_t rgbRed;
+    uint8_t rgbReserved;
+} RGBQUAD;
 #pragma pack(pop)
 
 #define M_PI 3.14159265358979323846
@@ -55,6 +62,44 @@ extern void convertToGrayscale(uint8_t *pixelData, int width, int height);
 extern void gaussianBlur(uint8_t *pixelData, int width, int height, int kernelSize, double sigma);
 extern void motionBlur(uint8_t *pixelData, int width, int height, int blurLength);
 extern void boxBlur(uint8_t *pixelData, int width, int height, int blurSize);
+
+
+void downScale(uint8_t *pixelData, int width, int height, BMPInfoHeader infoHeader)
+{
+    if(((double)width/height) >(4.0/3)){//This means the width is to large for the height
+        //printf("111");
+        printf("width:%d  height:%d  \n",width,height);
+        height = height - height%3;// Make sure the height is dividible by 3
+        width = (4*(height/3));// Make sure the new ratio is 4:3
+        printf("width:%d  height:%d",width,height);
+
+        for (int i = 0; i < height*width; i++)
+        {
+            pixelData[i] = pixelData[i];
+        }
+        infoHeader.bV5Height = height;
+        infoHeader.bV5Width = width;
+
+    }
+    else if(((double)width/height) <(4.0/3)){//This means the height is to large for the width
+        printf("222");
+    }
+    else{
+        //printf("333   %f\n", ((double)width/height));
+        printf("333  ");
+    }
+    printf("\n");
+}
+
+void createGrayscalePalette(RGBQUAD *palette) {
+    for (int i = 0; i < 256; i++) {
+        palette[i].rgbRed = i;      // R, G, B are the same for grayscale
+        palette[i].rgbGreen = i;
+        palette[i].rgbBlue = i;
+        palette[i].rgbReserved = 0;
+    }
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -118,6 +163,10 @@ int main(int argc, char *argv[])
     {
         sharpen(pixelData, width, height, 1.3);
     }
+    else if (strcmp(kernel, "test") == 0)
+    {
+        downScale(pixelData, width, height, infoHeader);
+    }
 
     // Write the modified image to a new BMP file
     FILE *outputFile = fopen(outputFilePath, "wb");
@@ -127,21 +176,48 @@ int main(int argc, char *argv[])
         free(pixelData);
         return 1;
     }
+    if(strcmp(kernel, "test") != 0){
+        printf("The number is: %d\n", sizeof(BMPHeader));
+        printf("The number is: %d\n", sizeof(BMPInfoHeader));
+        printf("The number is: %d\n", infoHeader.bV5BitCount);
 
-    printf("The number is: %d\n", sizeof(BMPHeader));
-    printf("The number is: %d\n", sizeof(BMPInfoHeader));
+        // Write the BMP header
+        fwrite(&header, sizeof(BMPHeader), 1, outputFile);
+        // Write the BMP info header
+        fwrite(&infoHeader, sizeof(BMPInfoHeader), 1, outputFile);
+        // Write the pixel data
+        fwrite(pixelData, sizeof(uint8_t), rowSize * height, outputFile);
 
-    // Write the BMP header
-    fwrite(&header, sizeof(BMPHeader), 1, outputFile);
-    // Write the BMP info header
-    fwrite(&infoHeader, sizeof(BMPInfoHeader), 1, outputFile);
-    // Write the pixel data
-    fwrite(pixelData, sizeof(uint8_t), rowSize * height, outputFile);
+        // Clean up
+        fclose(outputFile);
+        free(pixelData);
 
-    // Clean up
-    fclose(outputFile);
-    free(pixelData);
+        printf("Converted and saved the grayscale image to %s\n", outputFilePath);
+    }
+    else if(strcmp(kernel, "test") == 0){
+        infoHeader.bV5Reserved = 2882382797;
+        infoHeader.bV5Width = 568;
+        infoHeader.bV5ClrUsed = 256;
+        infoHeader.bV5ClrImportant = 256;
+        rowSize = (width + 3)& ~3;
+        infoHeader.bV5BitCount = 8;
+        header.bfOffBits = header.bfOffBits+1024;
+        //infoHeader.bV5ClrUsed = 256;
+        //infoHeader.bV5ClrImportant = 256;
+        header.bfSize = sizeof(header)+ sizeof(infoHeader)+rowSize*height*sizeof(uint8_t)+10000;
+        RGBQUAD palette[256];
+        createGrayscalePalette(palette);
 
-    printf("Converted and saved the grayscale image to %s\n", outputFilePath);
+        fwrite(&header, sizeof(BMPHeader), 1, outputFile);
+        fwrite(&infoHeader, sizeof(BMPInfoHeader), 1, outputFile);
+        fwrite(palette, sizeof(RGBQUAD), 256, outputFile);
+        // Write the pixel data
+        fwrite(pixelData, sizeof(uint8_t), rowSize * height, outputFile);
+        fclose(outputFile);
+        free(pixelData);
+        printf("Converted and saved the resized image to %s\n", outputFilePath);
+    }
+
+    
     return 0;
 }

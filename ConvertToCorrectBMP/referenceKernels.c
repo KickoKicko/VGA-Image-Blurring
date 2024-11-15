@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <math.h>
-#include "referenceKernels.h";
+#include "referenceKernels.h"
 
 #define M_PI 3.14159265358979323846
 
