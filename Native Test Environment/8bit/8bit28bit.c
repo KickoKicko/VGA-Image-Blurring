@@ -1,66 +1,109 @@
 #include <stdio.h>
-#include <stdint.h>
 #include <stdlib.h>
 
-// Function to scale 8-bit values to desired ranges
-uint8_t scale_color(uint8_t color, int bits)
+// Define BMP header sizes
+#define HEADER_SIZE 54
+#define PALETTE_SIZE 1024
+
+// Function to convert 8-bit to 3-bit (or 2-bit for blue)
+unsigned char convert_channel(unsigned char value, int bits)
 {
-    return (color * ((1 << bits) - 1)) / 255;
+    return value >> (8 - bits);
+}
+
+// Function to process BMP and save the output
+void process_bmp(const char *input_file, const char *output_file)
+{
+    FILE *input = fopen(input_file, "rb");
+    if (!input)
+    {
+        perror("Error opening input file");
+        return;
+    }
+
+    FILE *output = fopen(output_file, "wb");
+    if (!output)
+    {
+        perror("Error opening output file");
+        fclose(input);
+        return;
+    }
+
+    // Read and write BMP header
+    unsigned char header[HEADER_SIZE];
+    fread(header, sizeof(unsigned char), HEADER_SIZE, input);
+    fwrite(header, sizeof(unsigned char), HEADER_SIZE, output);
+
+    // Read and skip the palette
+    unsigned char palette[PALETTE_SIZE];
+    fread(palette, sizeof(unsigned char), PALETTE_SIZE, input);
+
+    // Extract pixel data
+    fseek(input, 0, SEEK_END);
+    long file_size = ftell(input);
+    long pixel_data_size = file_size - HEADER_SIZE - PALETTE_SIZE;
+    fseek(input, HEADER_SIZE + PALETTE_SIZE, SEEK_SET);
+
+    unsigned char *pixel_data = (unsigned char *)malloc(pixel_data_size);
+    if (!pixel_data)
+    {
+        perror("Memory allocation failed");
+        fclose(input);
+        fclose(output);
+        return;
+    }
+    fread(pixel_data, sizeof(unsigned char), pixel_data_size, input);
+
+    // Convert pixels
+    unsigned char red, green, blue, new_value;
+    unsigned char *new_pixel_data = (unsigned char *)malloc(pixel_data_size);
+    if (!new_pixel_data)
+    {
+        perror("Memory allocation failed");
+        free(pixel_data);
+        fclose(input);
+        fclose(output);
+        return;
+    }
+
+    for (long i = 0; i < pixel_data_size; i++)
+    {
+        unsigned char index = pixel_data[i];
+        blue = palette[index * 4];
+        green = palette[index * 4 + 1];
+        red = palette[index * 4 + 2];
+
+        // Convert to 3-bit red, 3-bit green, 2-bit blue
+        unsigned char red_3bit = convert_channel(red, 3);
+        unsigned char green_3bit = convert_channel(green, 3);
+        unsigned char blue_2bit = convert_channel(blue, 2);
+
+        // Combine into rrrgggbb format
+        new_value = (red_3bit << 5) | (green_3bit << 2) | blue_2bit;
+        new_pixel_data[i] = new_value;
+    }
+
+    // Write new pixel data to output file
+    fwrite(new_pixel_data, sizeof(unsigned char), pixel_data_size, output);
+
+    // Clean up
+    free(pixel_data);
+    free(new_pixel_data);
+    fclose(input);
+    fclose(output);
+
+    printf("Conversion complete! Output saved to %s\n", output_file);
 }
 
 int main(int argc, char *argv[])
 {
     if (argc != 3)
     {
-        printf("Usage: %s <input.bmp> <output.bmp>\n", argv[0]);
+        printf("Usage: %s <input bmp> <output bmp>\n", argv[0]);
         return 1;
     }
 
-    FILE *inputFile = fopen(argv[1], "rb");
-    if (!inputFile)
-    {
-        perror("Error opening input file");
-        return 1;
-    }
+    process_bmp(argv[1], argv[2]);
 
-    FILE *outputFile = fopen(argv[2], "wb");
-    if (!outputFile)
-    {
-        perror("Error opening output file");
-        fclose(inputFile);
-        return 1;
-    }
-
-    // BMP header and color palette buffers
-    uint8_t header[40];
-    uint8_t palette[1024];
-
-    // Read and write the header
-    fread(header, sizeof(uint8_t), 40, inputFile);
-    fwrite(header, sizeof(uint8_t), 40, outputFile);
-
-    // Read and write the palette
-    fread(palette, sizeof(uint8_t), 1024, inputFile);
-    fwrite(palette, sizeof(uint8_t), 1024, outputFile);
-
-    // Process the pixel data
-    uint8_t pixel;
-    while (fread(&pixel, sizeof(uint8_t), 1, inputFile) == 1)
-    {
-        // Convert the palette index (8-bit) to the desired format
-        uint8_t r = scale_color((pixel >> 5) & 0x07, 3); // Top 3 bits for red
-        uint8_t g = scale_color((pixel >> 2) & 0x07, 3); // Middle 3 bits for green
-        uint8_t b = scale_color(pixel & 0x03, 2);        // Bottom 2 bits for blue
-
-        // Combine into a single byte: RRR GGG BB
-        uint8_t converted_pixel = (r << 5) | (g << 2) | b;
-
-        fwrite(&converted_pixel, sizeof(uint8_t), 1, outputFile);
-    }
-
-    fclose(inputFile);
-    fclose(outputFile);
-
-    printf("Conversion complete. Output saved to %s\n", argv[2]);
     return 0;
 }
