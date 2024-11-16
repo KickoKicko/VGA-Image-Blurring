@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include "pixeldata.h"
 
 extern void print(const char *);
 extern void print_dec(unsigned int);
@@ -26,7 +27,7 @@ void updateVGADisplay(uint8_t *pixelData)
   volatile char *VGA = (volatile char *)0x08000000;
   for (int i = 0; i < 320 * 240; i++)
   {
-    VGA[i] = pixelData[i];
+    VGA[i] = flowers_bmp[i];
   }
 }
 
