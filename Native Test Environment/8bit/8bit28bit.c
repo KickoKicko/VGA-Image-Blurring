@@ -1,108 +1,66 @@
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 
-#pragma pack(push, 1)
-typedef struct
+// Function to scale 8-bit values to desired ranges
+uint8_t scale_color(uint8_t color, int bits)
 {
-    unsigned char header[2];      // "BM" signature
-    unsigned int fileSize;        // Size of the file
-    unsigned short reserved1;     // Reserved field 1
-    unsigned short reserved2;     // Reserved field 2
-    unsigned int dataOffset;      // Offset to the pixel data
-    unsigned int headerSize;      // Header size (usually 40 bytes)
-    unsigned int width;           // Width of the image
-    unsigned int height;          // Height of the image
-    unsigned short planes;        // Number of color planes (always 1)
-    unsigned short bpp;           // Bits per pixel (should be 8 for indexed)
-    unsigned int compression;     // Compression type (0 for none)
-    unsigned int imageSize;       // Image data size (may be 0)
-    unsigned int xPixelsPerMeter; // Horizontal resolution (not used here)
-    unsigned int yPixelsPerMeter; // Vertical resolution (not used here)
-    unsigned int colorsUsed;      // Number of colors used
-    unsigned int importantColors; // Important colors (not used here)
-} BMPHeader;
-
-#pragma pack(pop)
-
-void convertToRGB(FILE *inFile, FILE *outFile, BMPHeader *bmpHeader)
-{
-    // Move to the start of the pixel data
-    fseek(inFile, bmpHeader->dataOffset, SEEK_SET);
-
-    // Read the color palette (assuming it's 256 colors)
-    unsigned char palette[256 * 4]; // 256 colors with 4 bytes each (RGBA)
-    fread(palette, sizeof(unsigned char), 256 * 4, inFile);
-
-    // Create a new BMP header for output (with 24-bit color depth)
-    BMPHeader newBmpHeader = *bmpHeader;
-    newBmpHeader.bpp = 24;                                             // Change to 24 bits per pixel (RGB)
-    newBmpHeader.imageSize = bmpHeader->width * bmpHeader->height * 3; // New image size
-
-    // Output the new BMP header
-    fwrite(&newBmpHeader, sizeof(BMPHeader), 1, outFile);
-
-    // Loop through each pixel, convert the color index to RGB, and write to the new file
-    unsigned char colorIndex;
-    unsigned char rgb[3]; // Store RGB values
-    for (unsigned int i = 0; i < bmpHeader->width * bmpHeader->height; ++i)
-    {
-        // Read the color index
-        fread(&colorIndex, sizeof(unsigned char), 1, inFile);
-
-        // Get the corresponding RGB values from the palette
-        unsigned char *color = &palette[colorIndex * 4];
-        rgb[0] = color[2]; // R
-        rgb[1] = color[1]; // G
-        rgb[2] = color[0]; // B
-
-        // Write the RGB values to the new file
-        fwrite(rgb, sizeof(unsigned char), 3, outFile);
-    }
+    return (color * ((1 << bits) - 1)) / 255;
 }
 
-int main()
+int main(int argc, char *argv[])
 {
-    FILE *inFile = fopen("flowers.bmp", "rb");
-    if (inFile == NULL)
+    if (argc != 3)
     {
-        fprintf(stderr, "Error: Could not open input BMP file.\n");
+        printf("Usage: %s <input.bmp> <output.bmp>\n", argv[0]);
         return 1;
     }
 
-    // Read the BMP header
-    BMPHeader bmpHeader;
-    fread(&bmpHeader, sizeof(BMPHeader), 1, inFile);
-
-    // Verify it's an 8-bit indexed BMP (check for valid header values)
-    if (bmpHeader.header[0] != 'B' || bmpHeader.header[1] != 'M')
+    FILE *inputFile = fopen(argv[1], "rb");
+    if (!inputFile)
     {
-        fprintf(stderr, "Error: Not a valid BMP file.\n");
-        fclose(inFile);
+        perror("Error opening input file");
         return 1;
     }
 
-    if (bmpHeader.bpp != 8)
+    FILE *outputFile = fopen(argv[2], "wb");
+    if (!outputFile)
     {
-        fprintf(stderr, "Error: This program only supports 8-bit indexed BMP files.\n");
-        fclose(inFile);
+        perror("Error opening output file");
+        fclose(inputFile);
         return 1;
     }
 
-    // Open the output file
-    FILE *outFile = fopen("output.bmp", "wb");
-    if (outFile == NULL)
+    // BMP header and color palette buffers
+    uint8_t header[40];
+    uint8_t palette[1024];
+
+    // Read and write the header
+    fread(header, sizeof(uint8_t), 40, inputFile);
+    fwrite(header, sizeof(uint8_t), 40, outputFile);
+
+    // Read and write the palette
+    fread(palette, sizeof(uint8_t), 1024, inputFile);
+    fwrite(palette, sizeof(uint8_t), 1024, outputFile);
+
+    // Process the pixel data
+    uint8_t pixel;
+    while (fread(&pixel, sizeof(uint8_t), 1, inputFile) == 1)
     {
-        fprintf(stderr, "Error: Could not open output BMP file.\n");
-        fclose(inFile);
-        return 1;
+        // Convert the palette index (8-bit) to the desired format
+        uint8_t r = scale_color((pixel >> 5) & 0x07, 3); // Top 3 bits for red
+        uint8_t g = scale_color((pixel >> 2) & 0x07, 3); // Middle 3 bits for green
+        uint8_t b = scale_color(pixel & 0x03, 2);        // Bottom 2 bits for blue
+
+        // Combine into a single byte: RRR GGG BB
+        uint8_t converted_pixel = (r << 5) | (g << 2) | b;
+
+        fwrite(&converted_pixel, sizeof(uint8_t), 1, outputFile);
     }
 
-    // Convert the image to RGB and write it to the new file
-    convertToRGB(inFile, outFile, &bmpHeader);
+    fclose(inputFile);
+    fclose(outputFile);
 
-    fclose(inFile);
-    fclose(outFile);
-
-    printf("Conversion completed successfully!\n");
+    printf("Conversion complete. Output saved to %s\n", argv[2]);
     return 0;
 }
