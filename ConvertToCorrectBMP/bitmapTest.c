@@ -53,6 +53,12 @@ typedef struct {
     uint8_t rgbRed;
     uint8_t rgbReserved;
 } RGBQUAD;
+
+typedef struct {
+    uint8_t blue;
+    uint8_t green;
+    uint8_t red;
+} PIXEL24;
 #pragma pack(pop)
 
 #define M_PI 3.14159265358979323846
@@ -63,43 +69,98 @@ extern void gaussianBlur(uint8_t *pixelData, int width, int height, int kernelSi
 extern void motionBlur(uint8_t *pixelData, int width, int height, int blurLength);
 extern void boxBlur(uint8_t *pixelData, int width, int height, int blurSize);
 
+double colorDistance(PIXEL24 a, RGBQUAD b) {
+    return sqrt(pow(a.red - b.rgbRed, 2) +
+                pow(a.green - b.rgbGreen, 2) +
+                pow(a.blue - b.rgbBlue, 2));
+}
 
-void downScale(uint8_t *pixelData, int width, int height, BMPInfoHeader infoHeader)
+uint8_t findClosestColor(PIXEL24 pixel, RGBQUAD *palette, int paletteSize) {
+    double minDistance = 1e9;
+    uint8_t closestIndex = 0;
+    for (int i = 0; i < paletteSize; i++) {
+        double distance = colorDistance(pixel, palette[i]);
+        if (distance < minDistance) {
+            minDistance = distance;
+            closestIndex = i;
+        }
+    }
+    return closestIndex;
+}
+
+void downScale(uint8_t *pixelData, int width, int height, BMPInfoHeader *infoHeader, RGBQUAD *palette,uint8_t *newPixelData)
 {
+    int rowSize = (width + 3) & ~3;
     if(((double)width/height) >(4.0/3)){//This means the width is to large for the height
         //printf("111");
         printf("width:%d  height:%d  \n",width,height);
         height = height - height%3;// Make sure the height is dividible by 3
         width = (4*(height/3));// Make sure the new ratio is 4:3
-        printf("width:%d  height:%d",width,height);
+        (*infoHeader).bV5Height = height;
+        (*infoHeader).bV5Width = width;
+        printf("width:%d  height:%d  rowsize%d",width,height, rowSize);
 
-        for (int i = 0; i < height*width; i++)
+        int count = 0;
+        printf("\n");
+        for (int i = 0; i < height; i++)
         {
-            pixelData[i] = pixelData[i];
+            for (int j = 0; j < width; j++)
+            {
+                PIXEL24 pixel;
+                pixel.blue = pixelData[(i*rowSize*3)+(j*3)];
+                pixel.green = pixelData[(i*rowSize*3)+(j*3)+1];
+                pixel.red = pixelData[(i*rowSize*3)+(j*3)+2];
+                newPixelData[count] = findClosestColor(pixel, palette,256);
+                count++;
+            }
         }
-        infoHeader.bV5Height = height;
-        infoHeader.bV5Width = width;
-
     }
     else if(((double)width/height) <(4.0/3)){//This means the height is to large for the width
         printf("222");
     }
     else{
-        //printf("333   %f\n", ((double)width/height));
         printf("333  ");
     }
     printf("\n");
 }
 
-void createGrayscalePalette(RGBQUAD *palette) {
-    for (int i = 0; i < 256; i++) {
-        palette[i].rgbRed = i;      // R, G, B are the same for grayscale
-        palette[i].rgbGreen = i;
-        palette[i].rgbBlue = i;
-        palette[i].rgbReserved = 0;
+void generateVGA256Palette(RGBQUAD *palette) {
+    int index = 0;
+
+    // Standard VGA colors
+    RGBQUAD vgaColors[16] = {
+        {0x00, 0x00, 0x00, 0x00}, {0x80, 0x00, 0x00, 0x00}, {0x00, 0x80, 0x00, 0x00}, {0x80, 0x80, 0x00, 0x00},
+        {0x00, 0x00, 0x80, 0x00}, {0x80, 0x00, 0x80, 0x00}, {0x00, 0x80, 0x80, 0x00}, {0xC0, 0xC0, 0xC0, 0x00},
+        {0x80, 0x80, 0x80, 0x00}, {0xFF, 0x00, 0x00, 0x00}, {0x00, 0xFF, 0x00, 0x00}, {0xFF, 0xFF, 0x00, 0x00},
+        {0x00, 0x00, 0xFF, 0x00}, {0xFF, 0x00, 0xFF, 0x00}, {0x00, 0xFF, 0xFF, 0x00}, {0xFF, 0xFF, 0xFF, 0x00}
+    };
+    for (int i = 0; i < 16; i++) {
+        palette[index++] = vgaColors[i];
+    }
+
+    // RGB Gradient (216 colors)
+    for (int r = 0; r < 6; r++) {
+        for (int g = 0; g < 6; g++) {
+            for (int b = 0; b < 6; b++) {
+                palette[index].rgbBlue = b * 51;
+                palette[index].rgbGreen = g * 51;
+                palette[index].rgbRed = r * 51;
+                palette[index].rgbReserved = 0;
+                index++;
+            }
+        }
+    }
+
+    // Grayscale (24 colors)
+    for (int i = 0; i < 24; i++) {
+        uint8_t intensity = 8 + i * 10;
+        palette[index].rgbBlue = intensity;
+        palette[index].rgbGreen = intensity;
+        palette[index].rgbRed = intensity;
+        palette[index].rgbReserved = 0;
+        index++;
     }
 }
-
 
 int main(int argc, char *argv[])
 {
@@ -112,6 +173,9 @@ int main(int argc, char *argv[])
     const char *inputFilePath = argv[1];
     const char *outputFilePath = "output.bmp";
     const char *kernel = argv[2];
+
+    RGBQUAD palette[256];
+    generateVGA256Palette(palette);
 
     // Open the BMP file
     FILE *inputFile = fopen(inputFilePath, "rb");
@@ -139,6 +203,7 @@ int main(int argc, char *argv[])
     // Allocate memory for pixel data
     int rowSize = (width * 3 + 3); // Rows are padded to 4-byte boundaries
     uint8_t *pixelData = (uint8_t *)malloc(rowSize * height);
+    uint8_t *newPixelData = (uint8_t *)malloc(rowSize * height);
     fseek(inputFile, header.bfOffBits, SEEK_SET);
     fread(pixelData, sizeof(uint8_t), rowSize * height, inputFile);
     fclose(inputFile);
@@ -165,7 +230,7 @@ int main(int argc, char *argv[])
     }
     else if (strcmp(kernel, "test") == 0)
     {
-        downScale(pixelData, width, height, infoHeader);
+        downScale(pixelData, width, height, &infoHeader, palette, newPixelData);
     }
 
     // Write the modified image to a new BMP file
@@ -196,23 +261,18 @@ int main(int argc, char *argv[])
     }
     else if(strcmp(kernel, "test") == 0){
         infoHeader.bV5Reserved = 2882382797;
-        infoHeader.bV5Width = 568;
         infoHeader.bV5ClrUsed = 256;
         infoHeader.bV5ClrImportant = 256;
         rowSize = (width + 3)& ~3;
         infoHeader.bV5BitCount = 8;
-        header.bfOffBits = header.bfOffBits+1024;
-        //infoHeader.bV5ClrUsed = 256;
-        //infoHeader.bV5ClrImportant = 256;
-        header.bfSize = sizeof(header)+ sizeof(infoHeader)+rowSize*height*sizeof(uint8_t)+10000;
-        RGBQUAD palette[256];
-        createGrayscalePalette(palette);
+        header.bfOffBits = header.bfOffBits+1024;//Allocating memory for palette data
+        header.bfSize = sizeof(header)+ sizeof(infoHeader)+width*height+1024+10000;
 
         fwrite(&header, sizeof(BMPHeader), 1, outputFile);
         fwrite(&infoHeader, sizeof(BMPInfoHeader), 1, outputFile);
         fwrite(palette, sizeof(RGBQUAD), 256, outputFile);
         // Write the pixel data
-        fwrite(pixelData, sizeof(uint8_t), rowSize * height, outputFile);
+        fwrite(newPixelData, sizeof(uint8_t), rowSize * height, outputFile);
         fclose(outputFile);
         free(pixelData);
         printf("Converted and saved the resized image to %s\n", outputFilePath);
