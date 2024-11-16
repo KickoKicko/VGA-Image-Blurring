@@ -21,10 +21,9 @@ void updateVGADisplay()
   volatile char *VGA = (volatile char *)0x08000000;
     
     // Loop through every pixel in the screen (320x240)
-    for (int i = 0; i < 320 * 240; i++)
+    for (int i = 65; i < (320 * 240)+65; i++)
     {
-        // Set the pixel color (cycle through the palette)
-        VGA[i] = flowers_bmp[i];  // Use modulo to cycle through the 256 colors
+        VGA[i-65] = flowers4_bmp[i];  
     }
 }
 
