@@ -25,9 +25,14 @@ uint8_t tempCreatePixelData()
 void updateVGADisplay(uint8_t *pixelData)
 {
   volatile char *VGA = (volatile char *)0x08000000;
+  // Define a simple 16-color palette
+  unsigned char colorPalette[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+
+  // Loop through every pixel in the screen (320x240)
   for (int i = 0; i < 320 * 240; i++)
   {
-    VGA[i] = flowers_bmp[i];
+    // Set the pixel color (loop through the palette)
+    VGA[i] = colorPalette[i % 16]; // Use modulo to cycle through the 16 colors
   }
 }
 
