@@ -20,10 +20,19 @@ void updateVGADisplay()
 {
   volatile char *VGA = (volatile char *)0x08000000;
 
-  // Loop through every pixel in the screen (320x240)
-  for (int i = 65; i < (320 * 240) + 65; i++)
+  for (int y = 0; y < 240; y++)
   {
-    VGA[i - 65] = output_bmp[i];
+    for (int x = 0; x < 320; x++)
+    {
+      // Calculate source index in the BMP array
+      int srcIndex = ((239 - y) * 320) + x + 54; // 54 for alignment
+
+      // Calculate destination index in the VGA buffer
+      int dstIndex = (y * 320) + x;
+
+      // Copy pixel data from BMP to VGA
+      VGA[dstIndex] = __8bit_bmp[srcIndex];
+    }
   }
 }
 
