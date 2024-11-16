@@ -11,6 +11,12 @@ unsigned char convert_channel(unsigned char value, int bits)
     return value >> (8 - bits);
 }
 
+// Function to calculate row padding
+int calculate_padding(int width, int bytes_per_pixel)
+{
+    return (4 - (width * bytes_per_pixel) % 4) % 4;
+}
+
 // Function to process BMP and save the output
 void process_bmp(const char *input_file, const char *output_file)
 {
@@ -34,61 +40,65 @@ void process_bmp(const char *input_file, const char *output_file)
     fread(header, sizeof(unsigned char), HEADER_SIZE, input);
     fwrite(header, sizeof(unsigned char), HEADER_SIZE, output);
 
+    // Extract width and height from the BMP header
+    int width = *(int *)&header[18];
+    int height = *(int *)&header[22];
+    int bytes_per_pixel = 1; // For 8-bit BMP files
+    int row_padding = calculate_padding(width, bytes_per_pixel);
+
     // Read and skip the palette
     unsigned char palette[PALETTE_SIZE];
     fread(palette, sizeof(unsigned char), PALETTE_SIZE, input);
 
     // Extract pixel data
-    fseek(input, 0, SEEK_END);
-    long file_size = ftell(input);
-    long pixel_data_size = file_size - HEADER_SIZE - PALETTE_SIZE;
-    fseek(input, HEADER_SIZE + PALETTE_SIZE, SEEK_SET);
-
-    unsigned char *pixel_data = (unsigned char *)malloc(pixel_data_size);
-    if (!pixel_data)
+    unsigned char *row = (unsigned char *)malloc(width * sizeof(unsigned char));
+    unsigned char *new_row = (unsigned char *)malloc(width * sizeof(unsigned char));
+    if (!row || !new_row)
     {
         perror("Memory allocation failed");
-        fclose(input);
-        fclose(output);
-        return;
-    }
-    fread(pixel_data, sizeof(unsigned char), pixel_data_size, input);
-
-    // Convert pixels
-    unsigned char red, green, blue, new_value;
-    unsigned char *new_pixel_data = (unsigned char *)malloc(pixel_data_size);
-    if (!new_pixel_data)
-    {
-        perror("Memory allocation failed");
-        free(pixel_data);
+        free(row);
+        free(new_row);
         fclose(input);
         fclose(output);
         return;
     }
 
-    for (long i = 0; i < pixel_data_size; i++)
+    for (int y = 0; y < height; y++)
     {
-        unsigned char index = pixel_data[i];
-        blue = palette[index * 4];
-        green = palette[index * 4 + 1];
-        red = palette[index * 4 + 2];
+        // Read a row of pixel data (excluding padding)
+        fread(row, sizeof(unsigned char), width, input);
+        fseek(input, row_padding, SEEK_CUR); // Skip padding
 
-        // Convert to 3-bit red, 3-bit green, 2-bit blue
-        unsigned char red_3bit = convert_channel(red, 3);
-        unsigned char green_3bit = convert_channel(green, 3);
-        unsigned char blue_2bit = convert_channel(blue, 2);
+        // Convert each pixel in the row
+        for (int x = 0; x < width; x++)
+        {
+            unsigned char index = row[x];
+            unsigned char blue = palette[index * 4];
+            unsigned char green = palette[index * 4 + 1];
+            unsigned char red = palette[index * 4 + 2];
 
-        // Combine into rrrgggbb format
-        new_value = (red_3bit << 5) | (green_3bit << 2) | blue_2bit;
-        new_pixel_data[i] = new_value;
+            // Convert to 3-bit red, 3-bit green, 2-bit blue
+            unsigned char red_3bit = convert_channel(red, 3);
+            unsigned char green_3bit = convert_channel(green, 3);
+            unsigned char blue_2bit = convert_channel(blue, 2);
+
+            // Combine into rrrgggbb format
+            new_row[x] = (red_3bit << 5) | (green_3bit << 2) | blue_2bit;
+        }
+
+        // Write the new row to the output file
+        fwrite(new_row, sizeof(unsigned char), width, output);
+
+        // Add padding to the output file
+        for (int p = 0; p < row_padding; p++)
+        {
+            fputc(0, output);
+        }
     }
-
-    // Write new pixel data to output file
-    fwrite(new_pixel_data, sizeof(unsigned char), pixel_data_size, output);
 
     // Clean up
-    free(pixel_data);
-    free(new_pixel_data);
+    free(row);
+    free(new_row);
     fclose(input);
     fclose(output);
 
