@@ -96,6 +96,9 @@ void downScale(uint8_t *pixelData, int width, int height, BMPInfoHeader *infoHea
         printf("width:%d  height:%d  \n",width,height);
         height = height - height%3;// Make sure the height is dividible by 3
         width = (4*(height/3));// Make sure the new ratio is 4:3
+        int widthDifference = (*infoHeader).bV5Width - width;
+        int heightDifference = (*infoHeader).bV5Height - height;
+        printf("%d   %d",widthDifference, widthDifference/2);
         (*infoHeader).bV5Height = height;
         (*infoHeader).bV5Width = width;
         printf("width:%d  height:%d  rowsize%d",width,height, rowSize);
@@ -104,7 +107,7 @@ void downScale(uint8_t *pixelData, int width, int height, BMPInfoHeader *infoHea
         printf("\n");
         for (int i = 0; i < height; i++)
         {
-            for (int j = 0; j < width; j++)
+            for (int j = (widthDifference/2); j < width+(widthDifference/2); j++)
             {
                 PIXEL24 pixel;
                 pixel.blue = pixelData[(i*rowSize*3)+(j*3)];
@@ -260,7 +263,7 @@ int main(int argc, char *argv[])
         printf("Converted and saved the grayscale image to %s\n", outputFilePath);
     }
     else if(strcmp(kernel, "test") == 0){
-        infoHeader.bV5Reserved = 2882382797;
+        infoHeader.bV5Reserved = 2882382797;//To make it easier to see where the infoheader ends
         infoHeader.bV5ClrUsed = 256;
         infoHeader.bV5ClrImportant = 256;
         rowSize = (width + 3)& ~3;
