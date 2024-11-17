@@ -127,6 +127,47 @@ void downScale(uint8_t *pixelData, int width, int height, BMPInfoHeader *infoHea
     printf("\n");
 }
 
+void downScale2(uint8_t *pixelData, int width, int height, BMPInfoHeader *infoHeader, RGBQUAD *palette,uint8_t *newPixelData)
+{
+    double rowSize = (width + 3) & ~3;
+    if(((double)width/height) >(4.0/3)){//This means the width is to large for the height
+        //printf("111");
+        //height = height - height%3;// Make sure the height is dividible by 3
+        //width = (4*(height/3));// Make sure the new ratio is 4:3
+        double heightRatio = (double)height/240.0; 
+        double widthRatio = (double)width/320.0; 
+        height = 240;
+        width = 320;
+        int widthDifference = (*infoHeader).bV5Width - width;
+        int heightDifference = (*infoHeader).bV5Height - height;
+        (*infoHeader).bV5Height = height;
+        (*infoHeader).bV5Width = width;
+        printf("height:%f  width:%f  ", heightRatio, widthRatio);
+        int count = 0;
+        printf("\n");
+        for (double i = 0; i < height; i++)
+        {
+            for (double j = 0; j < width; j++)
+            {
+                int pixelPlace = (int)(((int)(i*heightRatio)*rowSize*3.0)+(j*3.0*widthRatio)) -(int)(((int)(i*heightRatio)*rowSize*3.0)+(j*3.0*widthRatio))%3;
+                PIXEL24 pixel;
+                pixel.blue = pixelData[pixelPlace];
+                pixel.green = pixelData[pixelPlace+1];
+                pixel.red = pixelData[pixelPlace+2];
+                newPixelData[count] = findClosestColor(pixel, palette,256);
+                count++;
+            }
+        }
+    }
+    else if(((double)width/height) <(4.0/3)){//This means the height is to large for the width
+        printf("222");
+    }
+    else{
+        printf("333  ");
+    }
+    printf("\n");
+}
+
 void generateVGA256Palette(RGBQUAD *palette) {
     int index = 0;
 
@@ -233,7 +274,7 @@ int main(int argc, char *argv[])
     }
     else if (strcmp(kernel, "test") == 0)
     {
-        downScale(pixelData, width, height, &infoHeader, palette, newPixelData);
+        downScale2(pixelData, width, height, &infoHeader, palette, newPixelData);
     }
 
     // Write the modified image to a new BMP file
