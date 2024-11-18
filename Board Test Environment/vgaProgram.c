@@ -25,7 +25,7 @@ void updateVGADisplay()
     for (int x = 0; x < 320; x++)
     {
       // Calculate source index in the BMP array
-      int srcIndex = ((239 - y) * 320) + x + 54; // 54 for alignment
+      int srcIndex = ((239 - y) * 320) + x + 1162; // 54 for alignment
 
       // Calculate destination index in the VGA buffer
       int dstIndex = (y * 320) + x;
