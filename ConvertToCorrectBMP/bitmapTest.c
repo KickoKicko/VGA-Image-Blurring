@@ -310,7 +310,7 @@ int main(int argc, char *argv[])
         rowSize = (width + 3)& ~3;
         infoHeader.bV5BitCount = 8;
         header.bfOffBits = header.bfOffBits+1024;//Allocating memory for palette data
-        header.bfSize = sizeof(header)+ sizeof(infoHeader)+width*height+1024+10000;
+        header.bfSize = sizeof(header)+ sizeof(infoHeader)+width*height+1024;
 
         fwrite(&header, sizeof(BMPHeader), 1, outputFile);
         fwrite(&infoHeader, sizeof(BMPInfoHeader), 1, outputFile);
@@ -318,7 +318,7 @@ int main(int argc, char *argv[])
         // Write the pixel data
         fwrite(newPixelData, sizeof(uint8_t), rowSize * height, outputFile);
         fclose(outputFile);
-        free(pixelData);
+        free(newPixelData);
         printf("Converted and saved the resized image to %s\n", outputFilePath);
     }
 
