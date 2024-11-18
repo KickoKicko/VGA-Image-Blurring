@@ -192,8 +192,11 @@ void downScale3(uint8_t *pixelData, int width, int height, BMPInfoHeader *infoHe
             pixel.green = pixelData[pixelPlace+1];
             pixel.red = pixelData[pixelPlace+2];
             newPixelData[count] = findClosestColor(pixel, palette,256);
-            if(i == 100 && j == 100){
-                printf("--  %d --",pixel.blue);
+            if(i == 200 && j == 300){
+                printf("--  %d -- %d ----",count, newPixelData[count]);
+            }
+            if(newPixelData[count] == 0){
+                //printf(" %d ",count);
             }
             count++;
         }
@@ -219,7 +222,7 @@ void generate332Palette(RGBQUAD *palette) {
     }
 }
 
-void generateVGA256Palette(RGBQUAD *palette) {
+/*void generateVGA256Palette(RGBQUAD *palette) {
     int index = 0;
 
     // Standard VGA colors
@@ -255,7 +258,7 @@ void generateVGA256Palette(RGBQUAD *palette) {
         palette[index].rgbReserved = 0;
         index++;
     }
-}
+}*/
 
 int main(int argc, char *argv[])
 {
@@ -301,7 +304,9 @@ int main(int argc, char *argv[])
     uint8_t *pixelData = (uint8_t *)malloc(rowSize * height);
 
     printf(" width:%d   height:%d", width, height);
-    uint8_t *newPixelData = (uint8_t *)malloc(600 * 240);
+    int memorySize = 320 * 240;
+    printf("  memorySize:%d   ", memorySize);
+    uint8_t *newPixelData = (uint8_t *)malloc(memorySize);
     fseek(inputFile, header.bfOffBits, SEEK_SET);
     fread(pixelData, sizeof(uint8_t), rowSize * height, inputFile);
     fclose(inputFile);
@@ -371,7 +376,7 @@ int main(int argc, char *argv[])
         fwrite(&infoHeader, sizeof(BMPInfoHeader), 1, outputFile);
         fwrite(palette, sizeof(RGBQUAD), 256, outputFile);
         // Write the pixel data
-        fwrite(newPixelData, sizeof(uint8_t), 320 * height, outputFile);
+        fwrite(newPixelData, sizeof(uint8_t), 320 * 240, outputFile);
         fclose(outputFile);
         free(newPixelData);
         printf("Converted and saved the resized image to %s\n", outputFilePath);
