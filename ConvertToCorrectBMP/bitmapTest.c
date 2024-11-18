@@ -193,13 +193,30 @@ void downScale3(uint8_t *pixelData, int width, int height, BMPInfoHeader *infoHe
             pixel.red = pixelData[pixelPlace+2];
             newPixelData[count] = findClosestColor(pixel, palette,256);
             if(i == 100 && j == 100){
-                printf("%d",pixel);
+                printf("--  %d --",pixel.blue);
             }
             count++;
         }
         //printf("%d", newPixelData[count]);
     }
     //printf("%d", count);
+}
+
+void generate332Palette(RGBQUAD *palette) {
+    for (int i = 0; i < 256; i++) {
+        // Extract 3 bits for red (bits 7-5)
+        uint8_t red = (i >> 5) & 0x07; // 3 bits (0-7)
+        // Extract 3 bits for green (bits 4-2)
+        uint8_t green = (i >> 2) & 0x07; // 3 bits (0-7)
+        // Extract 2 bits for blue (bits 1-0)
+        uint8_t blue = i & 0x03; // 2 bits (0-3)
+
+        // Scale values to 8-bit range
+        palette[i].rgbRed = red * 36;    // 0, 36, 73, ..., 255
+        palette[i].rgbGreen = green * 36; // 0, 36, 73, ..., 255
+        palette[i].rgbBlue = blue * 85;  // 0, 85, 170, 255
+        palette[i].rgbReserved = 0;      // Reserved, typically 0
+    }
 }
 
 void generateVGA256Palette(RGBQUAD *palette) {
@@ -253,7 +270,8 @@ int main(int argc, char *argv[])
     const char *kernel = argv[2];
 
     RGBQUAD palette[256];
-    generateVGA256Palette(palette);
+    //generateVGA256Palette(palette);
+    generate332Palette(palette);
 
     // Open the BMP file
     FILE *inputFile = fopen(inputFilePath, "rb");
@@ -343,7 +361,7 @@ int main(int argc, char *argv[])
         infoHeader.bV5Reserved = 2882382797;//To make it easier to see where the infoheader ends
         infoHeader.bV5ClrUsed = 256;
         infoHeader.bV5ClrImportant = 256;
-        rowSize = (width + 3)& ~3;
+        //rowSize = (width + 3)& ~3;
         infoHeader.bV5BitCount = 8;
         header.bfOffBits = header.bfOffBits+1024;//Allocating memory for palette data
         header.bfSize = sizeof(header)+ sizeof(infoHeader)+320*240+1024;
