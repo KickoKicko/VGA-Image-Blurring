@@ -168,6 +168,35 @@ void downScale2(uint8_t *pixelData, int width, int height, BMPInfoHeader *infoHe
     printf("\n");
 }
 
+void downScale3(uint8_t *pixelData, int width, int height, BMPInfoHeader *infoHeader, RGBQUAD *palette,uint8_t *newPixelData)
+{
+    double rowSize = (width + 3) & ~3;
+    double heightRatio = (double)height/240.0; 
+    double widthRatio = (double)width/320.0; 
+    height = 240;
+    width = 320;
+    int widthDifference = (*infoHeader).bV5Width - width;
+    int heightDifference = (*infoHeader).bV5Height - height;
+    (*infoHeader).bV5Height = height;
+    (*infoHeader).bV5Width = width;
+    printf("height:%f  width:%f  ", heightRatio, widthRatio);
+    int count = 0;
+    printf("\n");
+    for (double i = 0; i < height; i++)
+    {
+        for (double j = 0; j < width; j++)
+        {
+            int pixelPlace = (int)(((int)(i*heightRatio)*rowSize*3.0)+(j*3.0*widthRatio)) -(int)(((int)(i*heightRatio)*rowSize*3.0)+(j*3.0*widthRatio))%3;
+            PIXEL24 pixel;
+            pixel.blue = pixelData[pixelPlace];
+            pixel.green = pixelData[pixelPlace+1];
+            pixel.red = pixelData[pixelPlace+2];
+            newPixelData[count] = findClosestColor(pixel, palette,256);
+            count++;
+        }
+    }
+}
+
 void generateVGA256Palette(RGBQUAD *palette) {
     int index = 0;
 
@@ -274,7 +303,7 @@ int main(int argc, char *argv[])
     }
     else if (strcmp(kernel, "test") == 0)
     {
-        downScale2(pixelData, width, height, &infoHeader, palette, newPixelData);
+        downScale3(pixelData, width, height, &infoHeader, palette, newPixelData);
     }
 
     // Write the modified image to a new BMP file
@@ -310,7 +339,7 @@ int main(int argc, char *argv[])
         rowSize = (width + 3)& ~3;
         infoHeader.bV5BitCount = 8;
         header.bfOffBits = header.bfOffBits+1024;//Allocating memory for palette data
-        header.bfSize = sizeof(header)+ sizeof(infoHeader)+width*height+1024;
+        header.bfSize = sizeof(header)+ sizeof(infoHeader)+320*240+1024;
 
         fwrite(&header, sizeof(BMPHeader), 1, outputFile);
         fwrite(&infoHeader, sizeof(BMPInfoHeader), 1, outputFile);
@@ -318,6 +347,7 @@ int main(int argc, char *argv[])
         // Write the pixel data
         fwrite(newPixelData, sizeof(uint8_t), rowSize * height, outputFile);
         fclose(outputFile);
+        free(pixelData);
         free(newPixelData);
         printf("Converted and saved the resized image to %s\n", outputFilePath);
     }
