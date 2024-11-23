@@ -186,19 +186,6 @@ void generate332Palette(RGBQUAD *palette)
     }
 }
 
-uint8_t boxBlurringKernel(uint8_t arr[9]){
-    int blueTotal = 0;
-    int greenTotal = 0;
-    int redTotal = 0;
-    for (int i = 0; i < 9; i++)
-    {
-        blueTotal += (arr[i]>> 0) & 3;
-        greenTotal += (arr[i]>> 2) & 7;
-        redTotal += (arr[i]>> 5) & 7;
-    }
-    return (blueTotal+4)/9+(((greenTotal+4)/9)<<2)+(((redTotal+4)/9)<<5);
-}
-
 uint8_t blurringKernel(uint8_t arr[], int filterMatrix[], int total, int arrSize){
     int blueTotal = 0;
     int greenTotal = 0;
@@ -233,111 +220,6 @@ uint8_t blurringKernel(uint8_t arr[], int filterMatrix[], int total, int arrSize
     return blueTotal+(greenTotal<<2)+(redTotal<<5);
 }
 
-uint8_t gaussianBlurringKernel(uint8_t arr[9]){
-    int filter[9] = {1,2,1,2,4,2,1,2,1};
-    int blueTotal = 0;
-    int greenTotal = 0;
-    int redTotal = 0;
-    for (int i = 0; i < 9; i++)
-    {
-        blueTotal += filter[i]*((arr[i]>> 0) & 3);
-        greenTotal += filter[i]*((arr[i]>> 2) & 7);
-        redTotal += filter[i]*((arr[i]>> 5) & 7);
-    }
-    return (blueTotal+8)/16+(((greenTotal+8)/16)<<2)+(((redTotal+8)/16)<<5);
-}
-
-uint8_t sharpenKernel(uint8_t arr[9]){
-    int filter[9] = {0,-1,0,-1,5,-1,0,-1,0};
-    int blueTotal = 0;
-    int greenTotal = 0;
-    int redTotal = 0;
-    for (int i = 0; i < 9; i++)
-    {
-        blueTotal += filter[i]*((arr[i]>> 0) & 3);
-        greenTotal += filter[i]*((arr[i]>> 2) & 7);
-        redTotal += filter[i]*((arr[i]>> 5) & 7);
-    }
-    if(blueTotal>3){
-        blueTotal = 3;
-    }
-    if(blueTotal<0){
-        blueTotal = 0;
-    }
-    if(greenTotal>7){
-        greenTotal = 7;
-    }
-    if(greenTotal<0){
-        greenTotal = 0;
-    }
-    if(redTotal>7){
-        redTotal = 7;
-    }
-    if(redTotal<0){
-        redTotal = 0;
-    }
-    return blueTotal+(greenTotal<<2)+(redTotal<<5);
-}
-
-uint8_t motionBlurKernel(uint8_t arr[9]){
-    int filter[9] = {0,1,0,0,1,0,0,1,0};
-    int blueTotal = 0;
-    int greenTotal = 0;
-    int redTotal = 0;
-    for (int i = 0; i < 9; i++)
-    {
-        blueTotal += filter[i]*((arr[i]>> 0) & 3);
-        greenTotal += filter[i]*((arr[i]>> 2) & 7);
-        redTotal += filter[i]*((arr[i]>> 5) & 7);
-    }
-    return (blueTotal+1)/3+(((greenTotal+1)/3)<<2)+(((redTotal+1)/3)<<5);
-}
-
-void boxBlur2(uint8_t *pixelData, int blurType)
-{
-    uint8_t *tempPixelData = (uint8_t *)malloc(outputHeight*outputWidth);
-    for (int y = 0; y < outputHeight; y++)
-    {
-        for (int x = 0; x < outputWidth; x++)
-        {
-            int position = x+(y*outputWidth);
-            if(x == 0 || y == 0 || x == outputWidth-1 || y == outputHeight-1 ){
-                tempPixelData[position] = pixelData[position];
-            }
-            else{
-                uint8_t temp[9];
-                temp[0] = pixelData[position-outputWidth-1];
-                temp[1] = pixelData[position-outputWidth];
-                temp[2] = pixelData[position-outputWidth+1];
-                temp[3] = pixelData[position-1];
-                temp[4] = pixelData[position];
-                temp[5] = pixelData[position+1];
-                temp[6] = pixelData[position+outputWidth-1];
-                temp[7] = pixelData[position+outputWidth];
-                temp[8] = pixelData[position+outputWidth+1];
-                if(blurType == 0){
-                tempPixelData[position] = boxBlurringKernel(temp);
-                }
-                else if(blurType == 1){
-                    tempPixelData[position] = gaussianBlurringKernel(temp);
-                }
-                else if(blurType == 2){
-                    tempPixelData[position] = sharpenKernel(temp);
-                }
-                else if(blurType == 3){
-                    tempPixelData[position] = motionBlurKernel(temp);
-                }
-            }
-        }
-    }
-
-    for (int i = 0; i < 76800; i++)
-    {
-        pixelData[i] = tempPixelData[i];
-    }
-    //*pixelData = *tempPixelData;
-}
-
 void blurring(uint8_t *pixelData, int blurType, int kernelRadie)
 {
     uint8_t *tempPixelData = (uint8_t *)malloc(outputHeight*outputWidth);
@@ -362,7 +244,7 @@ void blurring(uint8_t *pixelData, int blurType, int kernelRadie)
                 }
                 
                 if(blurType == 0){
-                    if(kernelRadie == 1){
+                    if(kernelRadie == 1){//Box
                         int filterMatrix[] = {1,1,1,1,1,1,1,1,1};
                         tempPixelData[position] = blurringKernel(temp, filterMatrix, 9, 9);
                     }
@@ -371,35 +253,35 @@ void blurring(uint8_t *pixelData, int blurType, int kernelRadie)
                         tempPixelData[position] = blurringKernel(temp, filterMatrix, 25, 25);
                     }
                 }
-                else if(blurType == 1){
+                else if(blurType == 1){//Gaussian
                     if(kernelRadie == 1){
                         int filterMatrix[] = {1,2,1,2,4,2,1,2,1};
                         tempPixelData[position] = blurringKernel(temp, filterMatrix, 16, 9);
                     }
-                    /*if(kernelRadie == 2){
-                        int filterMatrix[] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
+                    if(kernelRadie == 2){
+                        int filterMatrix[] = {1,4,6,4,1,4,16,24,16,4,6,24,36,24,6,4,16,24,16,4,1,4,6,4,1};
                         tempPixelData[position] = blurringKernel(temp, filterMatrix, 256, 25);
-                    }*/
+                    }
                 }
-                else if(blurType == 2){
+                else if(blurType == 2){//Sharpen
                     if(kernelRadie == 1){
                         int filterMatrix[] = {0,-1,0,-1,5,-1,0,-1,0};
                         tempPixelData[position] = blurringKernel(temp, filterMatrix, 1, 9);
                     }
-                    /*if(kernelRadie == 2){
-                        int filterMatrix[] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
-                        tempPixelData[position] = blurringKernel(temp, filterMatrix, 256, 25);
-                    }*/
+                    if(kernelRadie == 2){
+                        int filterMatrix[] = {0,-1,-1,-1,0,-1,-1,-1,-1,-1,-1,-1,20,-1,-1,-1,-1,-1,-1,-1,0,-1,-1,-1,0};
+                        tempPixelData[position] = blurringKernel(temp, filterMatrix, 1, 25);
+                    }
                 }
-                else if(blurType == 3){
+                else if(blurType == 3){//Motion
                     if(kernelRadie == 1){
                         int filterMatrix[] = {0,0,0,1,1,1,0,0,0};
                         tempPixelData[position] = blurringKernel(temp, filterMatrix, 3, 9);
                     }
-                    /*if(kernelRadie == 2){
-                        int filterMatrix[] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
-                        tempPixelData[position] = blurringKernel(temp, filterMatrix, 256, 25);
-                    }*/
+                    if(kernelRadie == 2){
+                        int filterMatrix[] = {0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0};
+                        tempPixelData[position] = blurringKernel(temp, filterMatrix, 5, 25);
+                    }
                 }
                 
             }
@@ -465,19 +347,19 @@ int main(int argc, char *argv[])
     downScale(pixelData, width, height, &infoHeader, palette, newPixelData);
     if (strcmp(kernel, "boxBlur") == 0)
     {
-        boxBlur2(newPixelData, 0);
+        //boxBlur2(newPixelData, 0);
     }
     else if(strcmp(kernel, "gaussianBlur") == 0){
-        boxBlur2(newPixelData, 1);
+        //boxBlur2(newPixelData, 1);
     }
     else if(strcmp(kernel, "sharpen") == 0){
-        boxBlur2(newPixelData, 2);
+        //boxBlur2(newPixelData, 2);
     }
     else if(strcmp(kernel, "motionBlur") == 0){
-        boxBlur2(newPixelData, 3);
+        //boxBlur2(newPixelData, 3);
     }
     else if(strcmp(kernel, "test") == 0){
-        blurring(newPixelData, 3, 1);
+        blurring(newPixelData, 3, 2);
     }
 
     // Write the modified image to a new BMP file
