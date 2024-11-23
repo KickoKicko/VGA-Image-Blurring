@@ -186,7 +186,7 @@ void generate332Palette(RGBQUAD *palette)
     }
 }
 
-uint8_t boxBlurringPixel(uint8_t arr[9]){
+uint8_t boxBlurringKernel(uint8_t arr[9]){
     int blueTotal = 0;
     int greenTotal = 0;
     int redTotal = 0;
@@ -197,14 +197,25 @@ uint8_t boxBlurringPixel(uint8_t arr[9]){
         redTotal += (arr[i]>> 5) & 7;
     }
     return (blueTotal+4)/9+(((greenTotal+4)/9)<<2)+(((redTotal+4)/9)<<5);
-
 }
 
-void boxBlur2(uint8_t *pixelData)
+uint8_t gaussianBlurringKernel(uint8_t arr[9]){
+    int filter[9] = {1,2,1,2,4,2,1,2,1};
+    int blueTotal = 0;
+    int greenTotal = 0;
+    int redTotal = 0;
+    for (int i = 0; i < 9; i++)
+    {
+        blueTotal += filter[i]*((arr[i]>> 0) & 3);
+        greenTotal += filter[i]*((arr[i]>> 2) & 7);
+        redTotal += filter[i]*((arr[i]>> 5) & 7);
+    }
+    return (blueTotal+8)/16+(((greenTotal+8)/16)<<2)+(((redTotal+8)/16)<<5);
+}
+
+void boxBlur2(uint8_t *pixelData, int blurType)
 {
     uint8_t *tempPixelData = (uint8_t *)malloc(outputHeight*outputWidth);
-    int count1 = 0;
-    int count2 = 0;
     for (int y = 0; y < outputHeight; y++)
     {
         for (int x = 0; x < outputWidth; x++)
@@ -212,7 +223,6 @@ void boxBlur2(uint8_t *pixelData)
             int position = x+(y*outputWidth);
             if(x == 0 || y == 0 || x == outputWidth-1 || y == outputHeight-1 ){
                 tempPixelData[position] = pixelData[position];
-                count1++;
             }
             else{
                 uint8_t temp[9];
@@ -225,8 +235,12 @@ void boxBlur2(uint8_t *pixelData)
                 temp[6] = pixelData[position+outputWidth-1];
                 temp[7] = pixelData[position+outputWidth];
                 temp[8] = pixelData[position+outputWidth+1];
-                tempPixelData[position] = boxBlurringPixel(temp);
-                count2++;
+                if(blurType == 0){
+                tempPixelData[position] = boxBlurringKernel(temp);
+                }
+                else if(blurType == 1){
+                    tempPixelData[position] = gaussianBlurringKernel(temp);
+                }
             }
         }
     }
@@ -235,7 +249,6 @@ void boxBlur2(uint8_t *pixelData)
     {
         pixelData[i] = tempPixelData[i];
     }
-    printf("1:%d     2:%d", count1,count2);
     //*pixelData = *tempPixelData;
 }
 
@@ -319,10 +332,10 @@ int main(int argc, char *argv[])
     downScale(pixelData, width, height, &infoHeader, palette, newPixelData);
     if (strcmp(kernel, "boxBlur") == 0)
     {
-        boxBlur2(newPixelData);
+        boxBlur2(newPixelData, 0);
     }
-    else if(strcmp(kernel, "boxBlur") == 0){
-
+    else if(strcmp(kernel, "gaussianBlur") == 0){
+        boxBlur2(newPixelData, 1);
     }
 
     // Write the modified image to a new BMP file
