@@ -73,20 +73,20 @@ extern void gaussianBlur(uint8_t *pixelData, int width, int height, int kernelSi
 extern void motionBlur(uint8_t *pixelData, int width, int height, int blurLength);
 extern void boxBlur(uint8_t *pixelData, int width, int height, int blurSize);
 
-double colorDistance(PIXEL24 a, RGBQUAD b)
+double colorDistance24(PIXEL24 a, RGBQUAD b)
 {
     return sqrt(pow(a.red - b.rgbRed, 2) +
                 pow(a.green - b.rgbGreen, 2) +
                 pow(a.blue - b.rgbBlue, 2));
 }
 
-uint8_t findClosestColor(PIXEL24 pixel, RGBQUAD *palette, int paletteSize)
+uint8_t findClosestColor24(PIXEL24 pixel, RGBQUAD *palette, int paletteSize)
 {
     double minDistance = 1e9;
     uint8_t closestIndex = 0;
     for (int i = 0; i < paletteSize; i++)
     {
-        double distance = colorDistance(pixel, palette[i]);
+        double distance = colorDistance24(pixel, palette[i]);
         if (distance < minDistance)
         {
             minDistance = distance;
@@ -96,8 +96,53 @@ uint8_t findClosestColor(PIXEL24 pixel, RGBQUAD *palette, int paletteSize)
     return closestIndex;
 }
 
+int findClosestColor8(uint8_t red, uint8_t green, uint8_t blue, RGBQUAD *palette, int paletteSize) {
+    int closestIndex = 0;
+    double closestDistance = INFINITY;  // Start with the maximum possible distance
+
+    for (int i = 0; i < paletteSize; i++) {
+        // Calculate the squared distance between the colors
+        double distance = pow(red - palette[i].rgbRed, 2) +
+                          pow(green - palette[i].rgbGreen, 2) +
+                          pow(blue - palette[i].rgbBlue, 2);
+
+        // If the distance is smaller, update the closest color
+        if (distance < closestDistance) {
+            closestDistance = distance;
+            closestIndex = i;
+        }
+    }
+
+    return closestIndex;  // Return the index of the closest color
+}
+
+RGBQUAD averageColor(RGBQUAD colors[9]) {
+    // Variables to store the accumulated values
+    int totalRed = 0;
+    int totalGreen = 0;
+    int totalBlue = 0;
+
+    // Loop through all 9 colors and accumulate their RGB values
+    for (int i = 0; i < 9; i++) {
+        totalRed += colors[i].rgbRed;
+        totalGreen += colors[i].rgbGreen;
+        totalBlue += colors[i].rgbBlue;
+    }
+
+    // Calculate the average for each color component
+    RGBQUAD average;
+    average.rgbRed = totalRed / 9;
+    average.rgbGreen = totalGreen / 9;
+    average.rgbBlue = totalBlue / 9;
+
+    return average;
+}
+
 void downScale(uint8_t *pixelData, int width, int height, BMPInfoHeader *infoHeader, RGBQUAD *palette, uint8_t *newPixelData)
 {
+    int memorySize = outputWidth * outputHeight;
+    //uint8_t *tempPixelData = (uint8_t *)malloc(memorySize);
+    printf("pixeldata:%d ", pixelData);
     double rowSize = (width + 3) & ~3;
     double heightRatio = (double)height / outputHeight;
     double widthRatio = (double)width / outputWidth;
@@ -114,10 +159,12 @@ void downScale(uint8_t *pixelData, int width, int height, BMPInfoHeader *infoHea
             pixel.blue = pixelData[pixelPlace];
             pixel.green = pixelData[pixelPlace + 1];
             pixel.red = pixelData[pixelPlace + 2];
-            newPixelData[count] = findClosestColor(pixel, palette, 256);
+            newPixelData[count] = findClosestColor24(pixel, palette, 256);
+            //tempPixelData[count] = findClosestColor24(pixel, palette, 256);
             count++;
         }
     }
+    //*pixelData = realloc(*tempPixelData,memorySize);
 }
 
 void generate332Palette(RGBQUAD *palette)
@@ -139,8 +186,64 @@ void generate332Palette(RGBQUAD *palette)
     }
 }
 
+uint8_t boxBlurringPixel(uint8_t arr[9]){
+    int blueTotal = 0;
+    int greenTotal = 0;
+    int redTotal = 0;
+    for (int i = 0; i < 9; i++)
+    {
+        blueTotal += (arr[i]>> 0) & 3;
+
+        greenTotal += (arr[i]>> 2) & 7;
+
+        redTotal += (arr[i]>> 5) & 7;
+    }
+    //printf("r:%d   g:%d    b:%d     ",(redTotal+4)/9,(greenTotal+4)/9,(blueTotal+4)/9, arr[0]);
+    //return ((redTotal+4)/9+(greenTotal+4)/9+(blueTotal+4)/9);
+    uint8_t value = (blueTotal+4)/9+((greenTotal/9)<<2)+((redTotal/9)<<5);
+    //return ((redTotal/9)+(greenTotal/9)+(blueTotal/9));
+    return value;
+
+}
+
 void boxBlur2(uint8_t *pixelData)
 {
+    uint8_t *tempPixelData = (uint8_t *)malloc(outputHeight*outputWidth);
+    int count1 = 0;
+    int count2 = 0;
+    for (int y = 0; y < outputHeight; y++)
+    {
+        for (int x = 0; x < outputWidth; x++)
+        {
+            int position = x+(y*outputWidth);
+            if(x == 0 || y == 0 || x == outputWidth-1 || y == outputHeight-1 ){
+                tempPixelData[position] = pixelData[position];
+                count1++;
+            }
+            else{
+                uint8_t temp[9];
+                temp[0] = pixelData[position-outputWidth-1];
+                temp[1] = pixelData[position-outputWidth];
+                temp[2] = pixelData[position-outputWidth+1];
+                temp[3] = pixelData[position-1];
+                temp[4] = pixelData[position];
+                temp[5] = pixelData[position+1];
+                temp[6] = pixelData[position+outputWidth-1];
+                temp[7] = pixelData[position+outputWidth];
+                temp[8] = pixelData[position+outputWidth+1];
+                //tempPixelData[position] = (position%3)+1;
+                tempPixelData[position] = boxBlurringPixel(temp);
+                count2++;
+            }
+        }
+    }
+
+    for (int i = 0; i < 76800; i++)
+    {
+        pixelData[i] = tempPixelData[i];
+    }
+    printf("1:%d     2:%d", count1,count2);
+    //*pixelData = *tempPixelData;
 }
 
 int main(int argc, char *argv[])
@@ -219,8 +322,17 @@ int main(int argc, char *argv[])
         downScale(pixelData, width, height, &infoHeader, palette, newPixelData);
     }*/
 
+    uint8_t temp[9];
+    for (int i = 0; i < 9; i++)
+    {
+        temp[i] = 127;
+    }
+   
+    //printf("TESTING:%d   ", boxBlurringPixel(temp));
+
+
     downScale(pixelData, width, height, &infoHeader, palette, newPixelData);
-    if (strcmp(kernel, "motionBlur") == 0)
+    if (strcmp(kernel, "boxBlur") == 0)
     {
         boxBlur2(newPixelData);
     }
