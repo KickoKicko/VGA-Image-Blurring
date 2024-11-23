@@ -213,6 +213,38 @@ uint8_t gaussianBlurringKernel(uint8_t arr[9]){
     return (blueTotal+8)/16+(((greenTotal+8)/16)<<2)+(((redTotal+8)/16)<<5);
 }
 
+uint8_t sharpenKernel(uint8_t arr[9]){
+    int filter[9] = {0,-1,0,-1,5,-1,0,-1,0};
+    int blueTotal = 0;
+    int greenTotal = 0;
+    int redTotal = 0;
+    for (int i = 0; i < 9; i++)
+    {
+        blueTotal += filter[i]*((arr[i]>> 0) & 3);
+        greenTotal += filter[i]*((arr[i]>> 2) & 7);
+        redTotal += filter[i]*((arr[i]>> 5) & 7);
+    }
+    if(blueTotal>3){
+        blueTotal = 3;
+    }
+    if(blueTotal<0){
+        blueTotal = 0;
+    }
+    if(greenTotal>7){
+        greenTotal = 7;
+    }
+    if(greenTotal<0){
+        greenTotal = 0;
+    }
+    if(redTotal>7){
+        redTotal = 7;
+    }
+    if(redTotal<0){
+        redTotal = 0;
+    }
+    return blueTotal+(greenTotal<<2)+(redTotal<<5);
+}
+
 void boxBlur2(uint8_t *pixelData, int blurType)
 {
     uint8_t *tempPixelData = (uint8_t *)malloc(outputHeight*outputWidth);
@@ -240,6 +272,9 @@ void boxBlur2(uint8_t *pixelData, int blurType)
                 }
                 else if(blurType == 1){
                     tempPixelData[position] = gaussianBlurringKernel(temp);
+                }
+                else if(blurType == 2){
+                    tempPixelData[position] = sharpenKernel(temp);
                 }
             }
         }
@@ -336,6 +371,9 @@ int main(int argc, char *argv[])
     }
     else if(strcmp(kernel, "gaussianBlur") == 0){
         boxBlur2(newPixelData, 1);
+    }
+    else if(strcmp(kernel, "sharpen") == 0){
+        boxBlur2(newPixelData, 2);
     }
 
     // Write the modified image to a new BMP file
