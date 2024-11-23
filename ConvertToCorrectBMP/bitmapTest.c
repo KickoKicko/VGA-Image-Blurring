@@ -193,16 +193,10 @@ uint8_t boxBlurringPixel(uint8_t arr[9]){
     for (int i = 0; i < 9; i++)
     {
         blueTotal += (arr[i]>> 0) & 3;
-
         greenTotal += (arr[i]>> 2) & 7;
-
         redTotal += (arr[i]>> 5) & 7;
     }
-    //printf("r:%d   g:%d    b:%d     ",(redTotal+4)/9,(greenTotal+4)/9,(blueTotal+4)/9, arr[0]);
-    //return ((redTotal+4)/9+(greenTotal+4)/9+(blueTotal+4)/9);
-    uint8_t value = (blueTotal+4)/9+((greenTotal/9)<<2)+((redTotal/9)<<5);
-    //return ((redTotal/9)+(greenTotal/9)+(blueTotal/9));
-    return value;
+    return (blueTotal+4)/9+(((greenTotal+4)/9)<<2)+(((redTotal+4)/9)<<5);
 
 }
 
@@ -231,7 +225,6 @@ void boxBlur2(uint8_t *pixelData)
                 temp[6] = pixelData[position+outputWidth-1];
                 temp[7] = pixelData[position+outputWidth];
                 temp[8] = pixelData[position+outputWidth+1];
-                //tempPixelData[position] = (position%3)+1;
                 tempPixelData[position] = boxBlurringPixel(temp);
                 count2++;
             }
@@ -322,19 +315,14 @@ int main(int argc, char *argv[])
         downScale(pixelData, width, height, &infoHeader, palette, newPixelData);
     }*/
 
-    uint8_t temp[9];
-    for (int i = 0; i < 9; i++)
-    {
-        temp[i] = 127;
-    }
-   
-    //printf("TESTING:%d   ", boxBlurringPixel(temp));
-
 
     downScale(pixelData, width, height, &infoHeader, palette, newPixelData);
     if (strcmp(kernel, "boxBlur") == 0)
     {
         boxBlur2(newPixelData);
+    }
+    else if(strcmp(kernel, "boxBlur") == 0){
+
     }
 
     // Write the modified image to a new BMP file
