@@ -3,7 +3,6 @@
 #include <stdint.h>
 #include <string.h>
 #include <math.h>
-#include "referenceKernels.h"
 
 #pragma pack(push, 1)
 typedef struct
@@ -96,59 +95,14 @@ uint8_t findClosestColor24(PIXEL24 pixel, RGBQUAD *palette, int paletteSize)
     return closestIndex;
 }
 
-int findClosestColor8(uint8_t red, uint8_t green, uint8_t blue, RGBQUAD *palette, int paletteSize) {
-    int closestIndex = 0;
-    double closestDistance = INFINITY;  // Start with the maximum possible distance
-
-    for (int i = 0; i < paletteSize; i++) {
-        // Calculate the squared distance between the colors
-        double distance = pow(red - palette[i].rgbRed, 2) +
-                          pow(green - palette[i].rgbGreen, 2) +
-                          pow(blue - palette[i].rgbBlue, 2);
-
-        // If the distance is smaller, update the closest color
-        if (distance < closestDistance) {
-            closestDistance = distance;
-            closestIndex = i;
-        }
-    }
-
-    return closestIndex;  // Return the index of the closest color
-}
-
-RGBQUAD averageColor(RGBQUAD colors[9]) {
-    // Variables to store the accumulated values
-    int totalRed = 0;
-    int totalGreen = 0;
-    int totalBlue = 0;
-
-    // Loop through all 9 colors and accumulate their RGB values
-    for (int i = 0; i < 9; i++) {
-        totalRed += colors[i].rgbRed;
-        totalGreen += colors[i].rgbGreen;
-        totalBlue += colors[i].rgbBlue;
-    }
-
-    // Calculate the average for each color component
-    RGBQUAD average;
-    average.rgbRed = totalRed / 9;
-    average.rgbGreen = totalGreen / 9;
-    average.rgbBlue = totalBlue / 9;
-
-    return average;
-}
-
 void downScale(uint8_t *pixelData, int width, int height, BMPInfoHeader *infoHeader, RGBQUAD *palette, uint8_t *newPixelData)
 {
     int memorySize = outputWidth * outputHeight;
-    //uint8_t *tempPixelData = (uint8_t *)malloc(memorySize);
-    printf("pixeldata:%d ", pixelData);
     double rowSize = (width + 3) & ~3;
     double heightRatio = (double)height / outputHeight;
     double widthRatio = (double)width / outputWidth;
     (*infoHeader).bV5Height = outputHeight;
     (*infoHeader).bV5Width = outputWidth;
-    printf("height:%f  width:%f  ", heightRatio, widthRatio);
     int count = 0;
     for (double i = 0; i < outputHeight; i++)
     {
@@ -160,11 +114,9 @@ void downScale(uint8_t *pixelData, int width, int height, BMPInfoHeader *infoHea
             pixel.green = pixelData[pixelPlace + 1];
             pixel.red = pixelData[pixelPlace + 2];
             newPixelData[count] = findClosestColor24(pixel, palette, 256);
-            //tempPixelData[count] = findClosestColor24(pixel, palette, 256);
             count++;
         }
     }
-    //*pixelData = realloc(*tempPixelData,memorySize);
 }
 
 void generate332Palette(RGBQUAD *palette)
@@ -199,24 +151,10 @@ uint8_t blurringKernel(uint8_t arr[], int filterMatrix[], int total, int arrSize
     blueTotal = (blueTotal+(total/2))/total;
     greenTotal = (greenTotal+(total/2))/total;
     redTotal = (redTotal+(total/2))/total;
-    if(blueTotal>3){
-        blueTotal = 3;
-    }
-    if(blueTotal<0){
-        blueTotal = 0;
-    }
-    if(greenTotal>7){
-        greenTotal = 7;
-    }
-    if(greenTotal<0){
-        greenTotal = 0;
-    }
-    if(redTotal>7){
-        redTotal = 7;
-    }
-    if(redTotal<0){
-        redTotal = 0;
-    }
+
+    blueTotal = fmax(0, fmin(3, blueTotal));
+    greenTotal = fmax(0, fmin(7, greenTotal));
+    redTotal = fmax(0, fmin(7, redTotal));
     return blueTotal+(greenTotal<<2)+(redTotal<<5);
 }
 
@@ -232,7 +170,8 @@ void blurring(uint8_t *pixelData, int blurType, int kernelRadie)
                 tempPixelData[position] = pixelData[position];
             }
             else{
-                uint8_t temp[kernelRadie*kernelRadie];
+                int kernelSize = (kernelRadie*2+1)*(kernelRadie*2+1);
+                uint8_t temp[kernelSize];
                 int count = 0;
                 for (int i = -kernelRadie; i <= kernelRadie; i++)
                 {
@@ -244,44 +183,48 @@ void blurring(uint8_t *pixelData, int blurType, int kernelRadie)
                 }
                 
                 if(blurType == 0){
-                    if(kernelRadie == 1){//Box
-                        int filterMatrix[] = {1,1,1,1,1,1,1,1,1};
-                        tempPixelData[position] = blurringKernel(temp, filterMatrix, 9, 9);
+                    int filterMatrix[kernelSize];
+                    for (size_t i = 0; i < kernelSize; i++)
+                    {
+                        filterMatrix[i] = 1;
                     }
-                    if(kernelRadie == 2){
-                        int filterMatrix[] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
-                        tempPixelData[position] = blurringKernel(temp, filterMatrix, 25, 25);
-                    }
+                    tempPixelData[position] = blurringKernel(temp, filterMatrix, kernelSize, kernelSize);
                 }
                 else if(blurType == 1){//Gaussian
                     if(kernelRadie == 1){
                         int filterMatrix[] = {1,2,1,2,4,2,1,2,1};
-                        tempPixelData[position] = blurringKernel(temp, filterMatrix, 16, 9);
+                        tempPixelData[position] = blurringKernel(temp, filterMatrix, 16, kernelSize);
                     }
                     if(kernelRadie == 2){
                         int filterMatrix[] = {1,4,6,4,1,4,16,24,16,4,6,24,36,24,6,4,16,24,16,4,1,4,6,4,1};
-                        tempPixelData[position] = blurringKernel(temp, filterMatrix, 256, 25);
+                        tempPixelData[position] = blurringKernel(temp, filterMatrix, 256, kernelSize);
                     }
                 }
                 else if(blurType == 2){//Sharpen
                     if(kernelRadie == 1){
                         int filterMatrix[] = {0,-1,0,-1,5,-1,0,-1,0};
-                        tempPixelData[position] = blurringKernel(temp, filterMatrix, 1, 9);
+                        tempPixelData[position] = blurringKernel(temp, filterMatrix, 1, kernelSize);
                     }
                     if(kernelRadie == 2){
                         int filterMatrix[] = {0,-1,-1,-1,0,-1,-1,-1,-1,-1,-1,-1,20,-1,-1,-1,-1,-1,-1,-1,0,-1,-1,-1,0};
-                        tempPixelData[position] = blurringKernel(temp, filterMatrix, 1, 25);
+                        tempPixelData[position] = blurringKernel(temp, filterMatrix, 1, kernelSize);
                     }
                 }
                 else if(blurType == 3){//Motion
-                    if(kernelRadie == 1){
-                        int filterMatrix[] = {0,0,0,1,1,1,0,0,0};
-                        tempPixelData[position] = blurringKernel(temp, filterMatrix, 3, 9);
+                    int filterMatrix[kernelSize];
+                    for (int i = 0; i < kernelRadie*2+1; i++)
+                    {
+                        for (size_t j = 0; j < kernelRadie*2+1; j++)
+                        {
+                            if(i == kernelRadie){
+                                filterMatrix[i*(kernelRadie*2+1)+j] = 1;
+                            }
+                            else{
+                                filterMatrix[i*(kernelRadie*2+1)+j] = 0;
+                            }
+                        }
                     }
-                    if(kernelRadie == 2){
-                        int filterMatrix[] = {0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0};
-                        tempPixelData[position] = blurringKernel(temp, filterMatrix, 5, 25);
-                    }
+                    tempPixelData[position] = blurringKernel(temp, filterMatrix, (kernelRadie*2+1), kernelSize);
                 }
                 
             }
@@ -292,7 +235,6 @@ void blurring(uint8_t *pixelData, int blurType, int kernelRadie)
     {
         pixelData[i] = tempPixelData[i];
     }
-    //*pixelData = *tempPixelData;
 }
 
 int main(int argc, char *argv[])
@@ -306,9 +248,9 @@ int main(int argc, char *argv[])
     const char *inputFilePath = argv[1];
     const char *outputFilePath = "output.bmp";
     const char *kernel = argv[2];
+    const int kernelSizeInput = atoi(argv[3]);
 
     RGBQUAD palette[256];
-    // generateVGA256Palette(palette);
     generate332Palette(palette);
 
     // Open the BMP file
@@ -347,19 +289,19 @@ int main(int argc, char *argv[])
     downScale(pixelData, width, height, &infoHeader, palette, newPixelData);
     if (strcmp(kernel, "boxBlur") == 0)
     {
-        //boxBlur2(newPixelData, 0);
+        blurring(newPixelData, 0, kernelSizeInput);
     }
     else if(strcmp(kernel, "gaussianBlur") == 0){
-        //boxBlur2(newPixelData, 1);
+        blurring(newPixelData, 1, kernelSizeInput);
     }
     else if(strcmp(kernel, "sharpen") == 0){
-        //boxBlur2(newPixelData, 2);
+        blurring(newPixelData, 2, kernelSizeInput);
     }
     else if(strcmp(kernel, "motionBlur") == 0){
-        //boxBlur2(newPixelData, 3);
+        blurring(newPixelData, 3, kernelSizeInput);
     }
     else if(strcmp(kernel, "test") == 0){
-        blurring(newPixelData, 3, 2);
+        blurring(newPixelData, 3, kernelSizeInput);
     }
 
     // Write the modified image to a new BMP file

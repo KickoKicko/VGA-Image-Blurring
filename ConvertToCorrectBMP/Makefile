@@ -7,7 +7,7 @@ CC = gcc
 OUTPUT = bitmapTest
 
 # Source files
-SOURCES = bitmapTest.c referenceKernels.c
+SOURCES = bitmapTest.c
 
 # Target to build the executable
 $(OUTPUT): $(SOURCES)
