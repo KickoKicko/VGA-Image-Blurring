@@ -1,8 +1,8 @@
 #include <stdint.h>
+#include <stdlib.h>
+#include <math.h>
 #include "pixeldata.h"
 
-extern void print(const char *);
-extern void print_dec(unsigned int);
 extern void display_string(char *);
 extern void enable_interrupt(void);
 
@@ -16,10 +16,158 @@ void labinit(void)
   // enable_interrupt();
 }
 
-void updateVGADisplay()
+void *memcpy(void *dest, const void *src, size_t n)
+{
+  unsigned char *d = dest;
+  const unsigned char *s = src;
+  for (size_t i = 0; i < n; i++)
+  {
+    d[i] = s[i];
+  }
+  return dest;
+}
+
+void *memset(void *ptr, int value, size_t n)
+{
+  unsigned char *p = ptr;
+  for (size_t i = 0; i < n; i++)
+  {
+    p[i] = (unsigned char)value;
+  }
+  return ptr;
+}
+
+// Custom implementation of fmin
+int my_min(int a, int b)
+{
+  return (a < b) ? a : b;
+}
+
+// Custom implementation of fmax
+int my_max(int a, int b)
+{
+  return (a > b) ? a : b;
+}
+
+uint8_t blurringKernel(uint8_t arr[], int filterMatrix[], int total, int arrSize)
+{
+  int blueTotal = 0;
+  int greenTotal = 0;
+  int redTotal = 0;
+  for (int i = 0; i < arrSize; i++)
+  {
+    blueTotal += filterMatrix[i] * ((arr[i] >> 0) & 3);
+    greenTotal += filterMatrix[i] * ((arr[i] >> 2) & 7);
+    redTotal += filterMatrix[i] * ((arr[i] >> 5) & 7);
+  }
+  blueTotal = (blueTotal + (total / 2)) / total;
+  greenTotal = (greenTotal + (total / 2)) / total;
+  redTotal = (redTotal + (total / 2)) / total;
+
+  blueTotal = my_max(0, my_min(3, blueTotal));
+  greenTotal = my_max(0, my_min(7, greenTotal));
+  redTotal = my_max(0, my_min(7, redTotal));
+  return blueTotal + (greenTotal << 2) + (redTotal << 5);
+}
+
+void blurring(uint8_t *pixelData, int blurType, int kernelRadie)
+{
+  int outputHeight = 240;
+  int outputWidth = 320;
+
+  // Statically allocate memory for the temporary pixel data
+  uint8_t tempPixelData[240 * 320];
+
+  for (int y = 0; y < outputHeight; y++)
+  {
+    for (int x = 0; x < outputWidth; x++)
+    {
+      int position = x + (y * outputWidth);
+      if (x <= kernelRadie - 1 || y <= kernelRadie - 1 || x >= outputWidth - kernelRadie || y >= outputHeight - kernelRadie)
+      {
+        tempPixelData[position] = pixelData[position];
+      }
+      else
+      {
+        int kernelSize = (kernelRadie * 2 + 1) * (kernelRadie * 2 + 1);
+        uint8_t temp[kernelSize];
+        int count = 0;
+        for (int i = -kernelRadie; i <= kernelRadie; i++)
+        {
+          for (int j = -kernelRadie; j <= kernelRadie; j++)
+          {
+            temp[count] = pixelData[position + j + (i * outputWidth)];
+            count++;
+          }
+        }
+
+        if (blurType == 0)
+        {
+          int filterMatrix[kernelSize];
+          for (size_t i = 0; i < kernelSize; i++)
+          {
+            filterMatrix[i] = 1;
+          }
+          tempPixelData[position] = blurringKernel(temp, filterMatrix, kernelSize, kernelSize);
+        }
+        else if (blurType == 1)
+        { // Gaussian
+          if (kernelRadie == 1)
+          {
+            int filterMatrix[] = {1, 2, 1, 2, 4, 2, 1, 2, 1};
+            tempPixelData[position] = blurringKernel(temp, filterMatrix, 16, kernelSize);
+          }
+          if (kernelRadie == 2)
+          {
+            int filterMatrix[] = {1, 4, 6, 4, 1, 4, 16, 24, 16, 4, 6, 24, 36, 24, 6, 4, 16, 24, 16, 4, 1, 4, 6, 4, 1};
+            tempPixelData[position] = blurringKernel(temp, filterMatrix, 256, kernelSize);
+          }
+        }
+        else if (blurType == 2)
+        { // Sharpen
+          if (kernelRadie == 1)
+          {
+            int filterMatrix[] = {0, -1, 0, -1, 5, -1, 0, -1, 0};
+            tempPixelData[position] = blurringKernel(temp, filterMatrix, 1, kernelSize);
+          }
+          if (kernelRadie == 2)
+          {
+            int filterMatrix[] = {0, -1, -1, -1, 0, -1, -1, -1, -1, -1, -1, -1, 20, -1, -1, -1, -1, -1, -1, -1, 0, -1, -1, -1, 0};
+            tempPixelData[position] = blurringKernel(temp, filterMatrix, 1, kernelSize);
+          }
+        }
+        else if (blurType == 3)
+        { // Motion
+          int filterMatrix[kernelSize];
+          for (int i = 0; i < kernelRadie * 2 + 1; i++)
+          {
+            for (size_t j = 0; j < kernelRadie * 2 + 1; j++)
+            {
+              if (i == kernelRadie)
+              {
+                filterMatrix[i * (kernelRadie * 2 + 1) + j] = 1;
+              }
+              else
+              {
+                filterMatrix[i * (kernelRadie * 2 + 1) + j] = 0;
+              }
+            }
+          }
+          tempPixelData[position] = blurringKernel(temp, filterMatrix, (kernelRadie * 2 + 1), kernelSize);
+        }
+      }
+    }
+  }
+
+  for (int i = 0; i < 76800; i++)
+  {
+    pixelData[i] = tempPixelData[i];
+  }
+}
+void updateVGADisplay(int kernel, int kernelSize)
 {
   volatile char *VGA = (volatile char *)0x08000000;
-
+  blurring(output_bmp + 1162, 1, 3);
   for (int y = 0; y < 240; y++)
   {
     for (int x = 0; x < 320; x++)
@@ -36,8 +184,49 @@ void updateVGADisplay()
   }
 }
 
+int get_sw(void)
+{
+  volatile int *sw = (volatile int *)0x04000010;
+  int value = *sw & 0x3FF;
+  return value;
+}
+
+void clearVGADisplay()
+{
+  volatile char *VGA = (volatile char *)0x08000000;
+  for (int i = 0; i < 320 * 240; i++)
+  {
+    VGA[i] = 0;
+  }
+}
+
+void delay(unsigned int ms)
+{
+  volatile unsigned int i, j;
+  for (i = 0; i < ms; i++)
+  {
+    // Adjust the loop counts as necessary for your processor speed
+    for (j = 0; j < 100; j++)
+    {
+      // Empty loop to create the delay
+    }
+  }
+}
+
 /* Your code goes into main as well as any needed functions. */
 int main(void)
 {
-  updateVGADisplay();
+  clearVGADisplay();
+  updateVGADisplay(1, 5);
+  // while (1)
+  // {
+  //   if (get_sw() == 0)
+  //   {
+  //     updateVGADisplay(0, 1);
+  //   }
+  //   else
+  //   {
+  //     updateVGADisplay(3, 3);
+  //   }
+  // }
 }
