@@ -167,7 +167,7 @@ void blurring(uint8_t *pixelData, int blurType, int kernelRadie)
 void updateVGADisplay(int kernel, int kernelSize)
 {
   volatile char *VGA = (volatile char *)0x08000000;
-  blurring(output_bmp + 1162, 1, 3);
+  blurring(output_bmp, 1, 2);
   for (int y = 0; y < 240; y++)
   {
     for (int x = 0; x < 320; x++)
