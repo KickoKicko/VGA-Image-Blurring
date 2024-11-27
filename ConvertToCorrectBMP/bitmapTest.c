@@ -123,12 +123,9 @@ void generate332Palette(RGBQUAD *palette)
 {
     for (int i = 0; i < 256; i++)
     {
-        // Extract 3 bits for red (bits 7-5)
-        uint8_t red = (i >> 5) & 0x07; // 3 bits (0-7)
-        // Extract 3 bits for green (bits 4-2)
-        uint8_t green = (i >> 2) & 0x07; // 3 bits (0-7)
-        // Extract 2 bits for blue (bits 1-0)
-        uint8_t blue = i & 0x03; // 2 bits (0-3)
+        uint8_t red = (i >> 5) & 0x07;
+        uint8_t green = (i >> 2) & 0x07;
+        uint8_t blue = i & 0x03;
 
         // Scale values to 8-bit range
         palette[i].rgbRed = red * 36;     // 0, 36, 73, ..., 255
@@ -138,95 +135,188 @@ void generate332Palette(RGBQUAD *palette)
     }
 }
 
-uint8_t blurringKernel(uint8_t arr[], int filterMatrix[], int total, int arrSize){
+void generateGaussianKernel(float kernel[KSIZE][KSIZE], float sigma, int kernelRadie)
+{
+    int offset = KSIZE / 2;
+    float sum = 0.0;
+
+    // Generate the kernel values
+    for (int i = 0; i < KSIZE; i++)
+    {
+        for (int j = 0; j < KSIZE; j++)
+        {
+            int x = i - offset;
+            int y = j - offset;
+            kernel[i][j] = exp(-(x * x + y * y) / (2 * sigma * sigma)) / (2 * M_PI * sigma * sigma);
+            sum += kernel[i][j];
+        }
+    }
+
+    // Normalize the kernel so that the sum of all elements is 1
+    for (int i = 0; i < KSIZE; i++)
+    {
+        for (int j = 0; j < KSIZE; j++)
+        {
+            kernel[i][j] /= sum;
+        }
+    }
+}
+
+void generateGaussianKernel2(int kernelRadie, float sigma)
+{
+    double offset = kernelRadie * 2 + 1 / 2;
+    double sum = 0.0;
+
+    // Generate the kernel values
+    for (int i = 0; i < kernelRadie * 2 + 1; i++)
+    {
+        for (int j = 0; j < kernelRadie * 2 + 1; j++)
+        {
+            double x = i - offset;
+            double y = j - offset;
+            kernel[i][j] = (int)(exp(-(x * x + y * y) / (2 * sigma * sigma)) / (2 * M_PI * sigma * sigma));
+            sum += kernel[i][j];
+        }
+    }
+
+    // Normalize the kernel so that the sum of all elements is 1
+    for (int i = 0; i < kernelRadie * 2 + 1; i++)
+    {
+        for (int j = 0; j < kernelRadie * 2 + 1; j++)
+        {
+            kernel[i][j] /= sum;
+        }
+    }
+}
+
+uint8_t blurringKernel(uint8_t arr[], int filterMatrix[], int total, int arrSize)
+{
     int blueTotal = 0;
     int greenTotal = 0;
     int redTotal = 0;
     for (int i = 0; i < arrSize; i++)
     {
-        blueTotal += filterMatrix[i]*((arr[i]>> 0) & 3);
-        greenTotal += filterMatrix[i]*((arr[i]>> 2) & 7);
-        redTotal += filterMatrix[i]*((arr[i]>> 5) & 7);
+        blueTotal += filterMatrix[i] * ((arr[i] >> 0) & 3);
+        greenTotal += filterMatrix[i] * ((arr[i] >> 2) & 7);
+        redTotal += filterMatrix[i] * ((arr[i] >> 5) & 7);
     }
-    blueTotal = (blueTotal+(total/2))/total;
-    greenTotal = (greenTotal+(total/2))/total;
-    redTotal = (redTotal+(total/2))/total;
+    blueTotal = (blueTotal + (total / 2)) / total;
+    greenTotal = (greenTotal + (total / 2)) / total;
+    redTotal = (redTotal + (total / 2)) / total;
 
     blueTotal = fmax(0, fmin(3, blueTotal));
     greenTotal = fmax(0, fmin(7, greenTotal));
     redTotal = fmax(0, fmin(7, redTotal));
-    return blueTotal+(greenTotal<<2)+(redTotal<<5);
+    return blueTotal + (greenTotal << 2) + (redTotal << 5);
+}
+
+int *matrixGenerator(int blurType, int kernelSize, int kernelRadie)
+{
+    int *filterMatrix = (int *)malloc(kernelSize * sizeof(int));
+    if (blurType == 0)
+    {
+        for (size_t i = 0; i < kernelSize; i++)
+        {
+            filterMatrix[i] = 1;
+        }
+    }
+    else if (blurType == 1)
+    {
+        // filterMatrix = {1, 2, 1, 2, 4, 2, 1, 2, 1};
+        filterMatrix[0] = 1;
+        filterMatrix[1] = 2;
+        filterMatrix[2] = 1;
+        filterMatrix[3] = 2;
+        filterMatrix[4] = 4;
+        filterMatrix[5] = 2;
+        filterMatrix[6] = 1;
+        filterMatrix[7] = 2;
+        filterMatrix[8] = 1;
+        // int filterMatrix[] = {1,4,6,4,1,4,16,24,16,4,6,24,36,24,6,4,16,24,16,4,1,4,6,4,1};
+    }
+    else if (blurType == 2)
+    {
+        // filterMatrix = {0, -1, 0, -1, 5, -1, 0, -1, 0};
+        filterMatrix[0] = 0;
+        filterMatrix[1] = -1;
+        filterMatrix[2] = 0;
+        filterMatrix[3] = -1;
+        filterMatrix[4] = 5;
+        filterMatrix[5] = -1;
+        filterMatrix[6] = 0;
+        filterMatrix[7] = -1;
+        filterMatrix[8] = 0;
+    }
+    else if (blurType == 3)
+    {
+        for (int i = 0; i < kernelRadie * 2 + 1; i++)
+        {
+            for (int j = 0; j < kernelRadie * 2 + 1; j++)
+            {
+                if (i == kernelRadie)
+                {
+                    filterMatrix[i * (kernelRadie * 2 + 1) + j] = 1;
+                }
+                else
+                {
+                    filterMatrix[i * (kernelRadie * 2 + 1) + j] = 0;
+                }
+            }
+        }
+    }
+
+    return filterMatrix;
 }
 
 void blurring(uint8_t *pixelData, int blurType, int kernelRadie)
 {
-    uint8_t *tempPixelData = (uint8_t *)malloc(outputHeight*outputWidth);
+    uint8_t *tempPixelData = (uint8_t *)malloc(outputHeight * outputWidth);
     for (int y = 0; y < outputHeight; y++)
     {
         for (int x = 0; x < outputWidth; x++)
         {
-            int position = x+(y*outputWidth);
-            if(x<=kernelRadie-1 || y<=kernelRadie-1 || x >= outputWidth-kernelRadie || y >= outputHeight-kernelRadie){
+            int position = x + (y * outputWidth);
+            if (x <= kernelRadie - 1 || y <= kernelRadie - 1 || x >= outputWidth - kernelRadie || y >= outputHeight - kernelRadie)
+            {
                 tempPixelData[position] = pixelData[position];
             }
-            else{
-                int kernelSize = (kernelRadie*2+1)*(kernelRadie*2+1);
+            else
+            {
+                int kernelSize = (kernelRadie * 2 + 1) * (kernelRadie * 2 + 1);
                 uint8_t temp[kernelSize];
                 int count = 0;
                 for (int i = -kernelRadie; i <= kernelRadie; i++)
                 {
                     for (int j = -kernelRadie; j <= kernelRadie; j++)
                     {
-                        temp[count] = pixelData[position+j+(i*outputWidth)];
+                        temp[count] = pixelData[position + j + (i * outputWidth)];
                         count++;
                     }
                 }
-                
-                if(blurType == 0){
-                    int filterMatrix[kernelSize];
-                    for (size_t i = 0; i < kernelSize; i++)
-                    {
-                        filterMatrix[i] = 1;
-                    }
+                int *filterMatrix = matrixGenerator(blurType, kernelSize, kernelRadie);
+                if (blurType == 0)
+                {
                     tempPixelData[position] = blurringKernel(temp, filterMatrix, kernelSize, kernelSize);
                 }
-                else if(blurType == 1){//Gaussian
-                    if(kernelRadie == 1){
-                        int filterMatrix[] = {1,2,1,2,4,2,1,2,1};
+                else if (blurType == 1)
+                { // Gaussian
+                    if (kernelRadie == 1)
+                    {
                         tempPixelData[position] = blurringKernel(temp, filterMatrix, 16, kernelSize);
                     }
-                    if(kernelRadie == 2){
-                        int filterMatrix[] = {1,4,6,4,1,4,16,24,16,4,6,24,36,24,6,4,16,24,16,4,1,4,6,4,1};
+                    if (kernelRadie == 2)
+                    {
                         tempPixelData[position] = blurringKernel(temp, filterMatrix, 256, kernelSize);
                     }
                 }
-                else if(blurType == 2){//Sharpen
-                    if(kernelRadie == 1){
-                        int filterMatrix[] = {0,-1,0,-1,5,-1,0,-1,0};
-                        tempPixelData[position] = blurringKernel(temp, filterMatrix, 1, kernelSize);
-                    }
-                    if(kernelRadie == 2){
-                        int filterMatrix[] = {0,-1,-1,-1,0,-1,-1,-1,-1,-1,-1,-1,20,-1,-1,-1,-1,-1,-1,-1,0,-1,-1,-1,0};
-                        tempPixelData[position] = blurringKernel(temp, filterMatrix, 1, kernelSize);
-                    }
+                else if (blurType == 2)
+                { // Sharpen
+                    tempPixelData[position] = blurringKernel(temp, filterMatrix, 1, kernelSize);
                 }
-                else if(blurType == 3){//Motion
-                    int filterMatrix[kernelSize];
-                    for (int i = 0; i < kernelRadie*2+1; i++)
-                    {
-                        for (size_t j = 0; j < kernelRadie*2+1; j++)
-                        {
-                            if(i == kernelRadie){
-                                filterMatrix[i*(kernelRadie*2+1)+j] = 1;
-                            }
-                            else{
-                                filterMatrix[i*(kernelRadie*2+1)+j] = 0;
-                            }
-                        }
-                    }
-                    tempPixelData[position] = blurringKernel(temp, filterMatrix, (kernelRadie*2+1), kernelSize);
+                else if (blurType == 3)
+                { // Motion
+                    tempPixelData[position] = blurringKernel(temp, filterMatrix, (kernelRadie * 2 + 1), kernelSize);
                 }
-                
             }
         }
     }
@@ -291,16 +381,20 @@ int main(int argc, char *argv[])
     {
         blurring(newPixelData, 0, kernelSizeInput);
     }
-    else if(strcmp(kernel, "gaussianBlur") == 0){
+    else if (strcmp(kernel, "gaussianBlur") == 0)
+    {
         blurring(newPixelData, 1, kernelSizeInput);
     }
-    else if(strcmp(kernel, "sharpen") == 0){
+    else if (strcmp(kernel, "sharpen") == 0)
+    {
         blurring(newPixelData, 2, kernelSizeInput);
     }
-    else if(strcmp(kernel, "motionBlur") == 0){
+    else if (strcmp(kernel, "motionBlur") == 0)
+    {
         blurring(newPixelData, 3, kernelSizeInput);
     }
-    else if(strcmp(kernel, "test") == 0){
+    else if (strcmp(kernel, "test") == 0)
+    {
         blurring(newPixelData, 3, kernelSizeInput);
     }
 
@@ -312,7 +406,7 @@ int main(int argc, char *argv[])
         free(pixelData);
         return 1;
     }
-    
+
     infoHeader.bV5Reserved = 2882382797; // To make it easier to see where the infoheader ends
     infoHeader.bV5ClrUsed = 256;
     infoHeader.bV5ClrImportant = 256;
