@@ -2,7 +2,12 @@
 #include <stdlib.h>
 #include <math.h>
 #include "pixeldata.h"
+#include "dtekv-lib.h"
 
+#define KERNEL_SIZE 3
+#define KERNEL 3
+
+extern void print(char *);
 extern void display_string(char *);
 extern void enable_interrupt(void);
 
@@ -70,7 +75,8 @@ uint8_t blurringKernel(uint8_t arr[], int filterMatrix[], int total, int arrSize
   return blueTotal + (greenTotal << 2) + (redTotal << 5);
 }
 
-void blurring(uint8_t *pixelData, int blurType, int kernelRadie)
+// solution for variable not working, but ocnstant value did: use volatile int in argument type
+void blurring(uint8_t *pixelData, int blurType, volatile int kernelRadie)
 {
   int outputHeight = 240;
   int outputWidth = 320;
@@ -164,16 +170,18 @@ void blurring(uint8_t *pixelData, int blurType, int kernelRadie)
     pixelData[i] = tempPixelData[i];
   }
 }
-void updateVGADisplay(int kernel, int kernelSize)
+void updateVGADisplay(int __kernel, int __kernelSize)
 {
   volatile char *VGA = (volatile char *)0x08000000;
-  blurring(output_bmp, 1, 2);
+  print_dec(__kernelSize);
+  blurring(output_bmp, __kernel, __kernelSize);
+  print_dec(__kernelSize);
   for (int y = 0; y < 240; y++)
   {
     for (int x = 0; x < 320; x++)
     {
       // Calculate source index in the BMP array
-      int srcIndex = ((239 - y) * 320) + x + 1162; // 54 for alignment
+      int srcIndex = ((239 - y) * 320) + x; // 54 for alignment
 
       // Calculate destination index in the VGA buffer
       int dstIndex = (y * 320) + x;
@@ -196,7 +204,7 @@ void clearVGADisplay()
   volatile char *VGA = (volatile char *)0x08000000;
   for (int i = 0; i < 320 * 240; i++)
   {
-    VGA[i] = 0;
+    VGA[i] = 0x00;
   }
 }
 
@@ -217,7 +225,10 @@ void delay(unsigned int ms)
 int main(void)
 {
   clearVGADisplay();
-  updateVGADisplay(1, 5);
+  int _kernel = 3;
+  int _kernelSize = 3;
+  updateVGADisplay(_kernel, _kernelSize);
+  print_dec(_kernelSize);
   // while (1)
   // {
   //   if (get_sw() == 0)
