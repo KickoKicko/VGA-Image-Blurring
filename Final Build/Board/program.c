@@ -101,8 +101,8 @@ uint8_t blurringKernel(uint8_t arr[], int filterMatrix[], int total, int arrSize
 
 // några ändringar har gjorts i denna kod:
 // 1. kernelRadie är nu av typ volatile int
-// 2. ändrat sista kopieringen från temppixeldata till pixeldata så att vi inte behöver memcpy
-// 3. lagt till en early return när kernelradie = 0
+// 2. lagt till en early return när kernelradie = 0
+// 3. ändrat sista kopieringen från temppixeldata till pixeldata så att vi inte behöver memcpy
 
 //                                               ändring 1
 void blurring(uint8_t *pixelData, int blurType, volatile int kernelRadie)
