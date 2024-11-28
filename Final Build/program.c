@@ -21,27 +21,6 @@ void labinit(void)
   // enable_interrupt();
 }
 
-void *memcpy(void *dest, const void *src, size_t n)
-{
-  unsigned char *d = dest;
-  const unsigned char *s = src;
-  for (size_t i = 0; i < n; i++)
-  {
-    d[i] = s[i];
-  }
-  return dest;
-}
-
-void *memset(void *ptr, int value, size_t n)
-{
-  unsigned char *p = ptr;
-  for (size_t i = 0; i < n; i++)
-  {
-    p[i] = (unsigned char)value;
-  }
-  return ptr;
-}
-
 // Custom implementation of fmin
 int my_min(int a, int b)
 {
@@ -165,9 +144,10 @@ void blurring(uint8_t *pixelData, int blurType, volatile int kernelRadie)
     }
   }
 
-  for (int i = 0; i < 76800; i++)
+  for (int i = 0; i < 76800; i += 2)
   {
     pixelData[i] = tempPixelData[i];
+    pixelData[i + 1] = tempPixelData[i + 1]; // to trick the compiler into not using memcpy
   }
 }
 void updateVGADisplay(int __kernel, int __kernelSize)
