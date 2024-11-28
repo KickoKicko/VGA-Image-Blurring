@@ -5,6 +5,7 @@
     "24bitreferencekernels.c.h": "c",
     "math.h": "c",
     "8bitreferencekernels.h": "c",
-    "stdlib.h": "c"
+    "stdlib.h": "c",
+    "pixeldata.h": "c"
   }
 }
