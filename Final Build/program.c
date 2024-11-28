@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "pixeldata.h"
+#include "loadingPixelData.h"
 #include "dtekv-lib.h"
 
 extern void display_string(char *);
@@ -182,13 +183,32 @@ void clearVGADisplay()
   }
 }
 
+void displayLoading()
+{
+  volatile char *VGA = (volatile char *)0x08000000;
+  for (int y = 100; y < 130; y++)
+  {
+    for (int x = 100; x < 200; x++)
+    {
+      // Calculate source index in the BMP array
+      int srcIndex = ((239 - y) * 320) + x + 54; // 54 for alignment
+
+      // Calculate destination index in the VGA buffer
+      int dstIndex = (y * 320) + x;
+
+      // Copy pixel data from BMP to VGA
+      VGA[dstIndex] = LoadingOutput_bmp[srcIndex];
+    }
+  }
+}
+
 void delay(unsigned int ms)
 {
   volatile unsigned int i, j;
   for (i = 0; i < ms; i++)
   {
     // Adjust the loop counts as necessary for your processor speed
-    for (j = 0; j < 100; j++)
+    for (j = 0; j < 1300; j++)
     {
       // Empty loop to create the delay
     }
@@ -199,5 +219,9 @@ void delay(unsigned int ms)
 int main(void)
 {
   clearVGADisplay();
+  displayLoading();
   updateVGADisplay(3, 3);
+  delay(3000);
+  displayLoading();
+  updateVGADisplay(0, 3);
 }
