@@ -4,10 +4,6 @@
 #include "pixeldata.h"
 #include "dtekv-lib.h"
 
-#define KERNEL_SIZE 3
-#define KERNEL 3
-
-extern void print(char *);
 extern void display_string(char *);
 extern void enable_interrupt(void);
 
@@ -150,12 +146,10 @@ void blurring(uint8_t *pixelData, int blurType, volatile int kernelRadie)
     pixelData[i + 1] = tempPixelData[i + 1]; // to trick the compiler into not using memcpy
   }
 }
-void updateVGADisplay(int __kernel, int __kernelSize)
+void updateVGADisplay(int kernelType, int kernelRadie)
 {
   volatile char *VGA = (volatile char *)0x08000000;
-  print_dec(__kernelSize);
-  blurring(output_bmp, __kernel, __kernelSize);
-  print_dec(__kernelSize);
+  blurring(output_bmp, kernelType, kernelRadie);
   for (int y = 0; y < 240; y++)
   {
     for (int x = 0; x < 320; x++)
@@ -205,19 +199,5 @@ void delay(unsigned int ms)
 int main(void)
 {
   clearVGADisplay();
-  int _kernel = 3;
-  int _kernelSize = 3;
-  updateVGADisplay(_kernel, _kernelSize);
-  print_dec(_kernelSize);
-  // while (1)
-  // {
-  //   if (get_sw() == 0)
-  //   {
-  //     updateVGADisplay(0, 1);
-  //   }
-  //   else
-  //   {
-  //     updateVGADisplay(3, 3);
-  //   }
-  // }
+  updateVGADisplay(3, 3);
 }
