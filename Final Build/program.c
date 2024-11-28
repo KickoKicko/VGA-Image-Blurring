@@ -220,7 +220,19 @@ int main(void)
 {
   clearVGADisplay();
   displayLoading();
+  updateVGADisplay(3, 1);
+  delay(3000);
+  displayLoading();
+  updateVGADisplay(3, 2);
+  delay(3000);
+  displayLoading();
   updateVGADisplay(3, 3);
+  delay(3000);
+  displayLoading();
+  updateVGADisplay(0, 1);
+  delay(3000);
+  displayLoading();
+  updateVGADisplay(0, 2);
   delay(3000);
   displayLoading();
   updateVGADisplay(0, 3);
