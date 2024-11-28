@@ -2,20 +2,68 @@
 #include <stdlib.h>
 #include <math.h>
 #include "pixeldata.h"
+#include "staticPixeldata.h"
 #include "loadingPixelData.h"
 #include "dtekv-lib.h"
 
 extern void display_string(char *);
 extern void enable_interrupt(void);
 
-void handle_interrupt()
+int *edgecaptureSwitch = (int *)0x0400001C;
+int *switchData = (int *)0x04000010;
+int *edgecaptureButton = (int *)0x040000dC;
+
+int btn_counter = 1;
+
+int loadingBool = 0;
+
+void delay(unsigned int ms)
 {
+  volatile unsigned int i, j;
+  for (i = 0; i < ms; i++)
+  {
+    // Adjust the loop counts as necessary for your processor speed
+    for (j = 0; j < 1300; j++)
+    {
+      // Empty loop to create the delay
+    }
+  }
+}
+
+/* Below is the function that will be called when an interrupt is triggered. */
+void handle_interrupt(unsigned cause)
+{
+  switch (cause)
+  {
+  case 17:
+    break;
+  case 18:
+    btn_counter++;
+    *edgecaptureButton = 0b1;
+
+    if (btn_counter % 2 == 0 && loadingBool == 0)
+    {
+      int kernel = (*switchData >> 8) & 0b11;
+      int kernelSize = *switchData & 0b111;
+      initiatePicture(kernel, kernelSize);
+      print_dec(kernel);
+      print_dec(kernelSize);
+    }
+    break;
+  default:
+    display_string("what??");
+    break;
+  }
 }
 
 /* Add your code here for initializing interrupts. */
 void labinit(void)
 {
-  // enable_interrupt();
+  int *interruptmaskSwitch = (int *)0x04000018;
+  *interruptmaskSwitch = 0b1111111111;
+  int *interruptmaskButton = (int *)0x040000d8;
+  *interruptmaskButton = 0b1111111111;
+  enable_interrupt();
 }
 
 // Custom implementation of fmin
@@ -51,9 +99,20 @@ uint8_t blurringKernel(uint8_t arr[], int filterMatrix[], int total, int arrSize
   return blueTotal + (greenTotal << 2) + (redTotal << 5);
 }
 
-// solution for variable not working, but ocnstant value did: use volatile int in argument type
+// några ändringar har gjorts i denna kod:
+// 1. kernelRadie är nu av typ volatile int
+// 2. ändrat sista kopieringen från temppixeldata till pixeldata så att vi inte behöver memcpy
+// 3. lagt till en early return när kernelradie = 0
+
+//                                               ändring 1
 void blurring(uint8_t *pixelData, int blurType, volatile int kernelRadie)
 {
+  // ändring 2
+  if (kernelRadie == 0)
+  {
+    return 0;
+  }
+
   int outputHeight = 240;
   int outputWidth = 320;
 
@@ -141,6 +200,7 @@ void blurring(uint8_t *pixelData, int blurType, volatile int kernelRadie)
     }
   }
 
+  // ändring 3
   for (int i = 0; i < 76800; i += 2)
   {
     pixelData[i] = tempPixelData[i];
@@ -167,6 +227,15 @@ void updateVGADisplay(int kernelType, int kernelRadie)
   }
 }
 
+void resetPixelData(void)
+{
+  for (int i = 0; i < 76800; i += 2)
+  {
+    output_bmp[i] = static_output_bmp[i];
+    output_bmp[i + 1] = static_output_bmp[i + 1];
+  }
+}
+
 int get_sw(void)
 {
   volatile int *sw = (volatile int *)0x04000010;
@@ -185,6 +254,7 @@ void clearVGADisplay()
 
 void displayLoading()
 {
+  loadingBool = 1;
   volatile char *VGA = (volatile char *)0x08000000;
   for (int y = 100; y < 130; y++)
   {
@@ -200,40 +270,41 @@ void displayLoading()
       VGA[dstIndex] = LoadingOutput_bmp[srcIndex];
     }
   }
+  loadingBool = 0;
 }
 
-void delay(unsigned int ms)
+void initiatePicture(int kernel, int kernelSize)
 {
-  volatile unsigned int i, j;
-  for (i = 0; i < ms; i++)
-  {
-    // Adjust the loop counts as necessary for your processor speed
-    for (j = 0; j < 1300; j++)
-    {
-      // Empty loop to create the delay
-    }
-  }
+  displayLoading();
+  resetPixelData();
+  updateVGADisplay(kernel, kernelSize);
 }
 
 /* Your code goes into main as well as any needed functions. */
 int main(void)
 {
   clearVGADisplay();
-  displayLoading();
-  updateVGADisplay(3, 1);
-  delay(3000);
-  displayLoading();
-  updateVGADisplay(3, 2);
-  delay(3000);
-  displayLoading();
-  updateVGADisplay(3, 3);
-  delay(3000);
-  displayLoading();
-  updateVGADisplay(0, 1);
-  delay(3000);
-  displayLoading();
-  updateVGADisplay(0, 2);
-  delay(3000);
-  displayLoading();
-  updateVGADisplay(0, 3);
+  updateVGADisplay(0, 0);
+  labinit();
+  while (1)
+  {
+    // print_dec(get_sw());
+  }
+  // displayLoading();
+  // updateVGADisplay(3, 1);
+  // delay(3000);
+  // displayLoading();
+  // updateVGADisplay(3, 2);
+  // delay(3000);
+  // displayLoading();
+  // updateVGADisplay(3, 3);
+  // delay(3000);
+  // displayLoading();
+  // updateVGADisplay(0, 1);
+  // delay(3000);
+  // displayLoading();
+  // updateVGADisplay(0, 2);
+  // delay(3000);
+  // displayLoading();
+  // updateVGADisplay(0, 3);
 }
