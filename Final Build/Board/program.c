@@ -12,6 +12,7 @@
 extern void display_string(char *);
 extern void enable_interrupt(void);
 
+volatile char *VGA = (volatile char *)0x08000000;
 int *edgecaptureSwitch = (int *)0x0400001C;
 int *switchData = (int *)0x04000010;
 int *edgecaptureButton = (int *)0x040000dC;
@@ -54,22 +55,16 @@ void handle_interrupt(unsigned cause)
   }
 }
 
-void updateVGADisplay(int kernelType, int kernelRadie)
-{
-  volatile char *VGA = (volatile char *)0x08000000;
-  blurring(output_bmp, kernelType, kernelRadie);
+void updateVGADisplay(const char *arr){
   for (int y = 0; y < 240; y++)
   {
     for (int x = 0; x < 320; x++)
     {
-      // Calculate source index in the BMP array
-      int srcIndex = ((239 - y) * 320) + x; // 54 for alignment
+      int srcIndex = ((239 - y) * 320) + x; 
 
-      // Calculate destination index in the VGA buffer
       int dstIndex = (y * 320) + x;
 
-      // Copy pixel data from BMP to VGA
-      VGA[dstIndex] = output_bmp[srcIndex];
+      VGA[dstIndex] = arr[srcIndex];
     }
   }
 }
@@ -95,21 +90,7 @@ void clearVGADisplay()
 void displayLoading()
 {
   loadingBool = 1;
-  volatile char *VGA = (volatile char *)0x08000000;
-  for (int y = 100; y < 130; y++)
-  {
-    for (int x = 100; x < 200; x++)
-    {
-      // Calculate source index in the BMP array
-      int srcIndex = ((239 - y) * 320) + x + 54; // 54 for alignment
-
-      // Calculate destination index in the VGA buffer
-      int dstIndex = (y * 320) + x;
-
-      // Copy pixel data from BMP to VGA
-      VGA[dstIndex] = LoadingOutput_bmp[srcIndex];
-    }
-  }
+  updateVGADisplay(LoadingOutput_bmp);
   loadingBool = 0;
 }
 
@@ -117,7 +98,8 @@ void initiatePicture(int kernel, int kernelSize)
 {
   displayLoading();
   resetPixelData();
-  updateVGADisplay(kernel, kernelSize);
+  blurring(output_bmp, kernel, kernelSize);
+  updateVGADisplay(output_bmp);
 }
 
 int main(void)
