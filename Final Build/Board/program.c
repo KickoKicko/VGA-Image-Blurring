@@ -7,6 +7,9 @@
 #include "dtekv-lib.h"
 #include "customHelper.h"
 
+#define M_EULER 2.718281828459045235360287471352
+#define M_PI 3.14159265358979323846
+
 extern void display_string(char *);
 extern void enable_interrupt(void);
 
@@ -336,6 +339,6 @@ int main(void)
   labinit();
   while (1)
   {
-    //make sure the program is running
+    // make sure the program is running
   }
 }
