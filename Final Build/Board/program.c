@@ -212,13 +212,13 @@ void blurring(uint8_t *pixelData, int blurType, volatile int kernelRadie)
 
   // Statically allocate memory for the temporary pixel data
   uint8_t tempPixelData[240 * 320];
-
+  int kernelSize = (kernelRadie * 2 + 1) * (kernelRadie * 2 + 1);
   for (int y = 0; y < outputHeight; y++)
   {
     for (int x = 0; x < outputWidth; x++)
     {
       int position = x + (y * outputWidth);
-      int kernelSize = (kernelRadie * 2 + 1) * (kernelRadie * 2 + 1);
+
       uint8_t temp[kernelSize];
       if (x <= kernelRadie - 1 || y <= kernelRadie - 1 || x >= outputWidth - kernelRadie || y >= outputHeight - kernelRadie)
       {
