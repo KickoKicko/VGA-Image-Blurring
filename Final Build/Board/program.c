@@ -105,7 +105,8 @@ void initiatePicture(int kernel, int kernelSize)
 int main(void)
 {
   clearVGADisplay();
-  updateVGADisplay(0, 0);
+  blurring(output_bmp, 0, 0);
+  updateVGADisplay(output_bmp);
   init();
   while (1)
   {
