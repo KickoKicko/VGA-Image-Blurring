@@ -111,8 +111,6 @@ void handle_interrupt(unsigned cause)
       int kernel = (*switchData >> 8) & 0b11;
       int kernelSize = *switchData & 0b111;
       initiatePicture(kernel, kernelSize);
-      print_dec(kernel);
-      print_dec(kernelSize);
     }
     break;
   default:
@@ -389,13 +387,6 @@ void resetPixelData(void)
     output_bmp[i] = static_output_bmp[i];
     output_bmp[i + 1] = static_output_bmp[i + 1];
   }
-}
-
-int get_sw(void)
-{
-  volatile int *sw = (volatile int *)0x04000010;
-  int value = *sw & 0x3FF;
-  return value;
 }
 
 void clearVGADisplay()
