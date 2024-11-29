@@ -55,14 +55,14 @@ void handle_interrupt(unsigned cause)
   }
 }
 
-void updateVGADisplay(unsigned char *arr){
-  for (int y = 0; y < 240; y++)
+void updateVGADisplay(unsigned char *arr, int startX, int endX, int startY, int endY){
+  for (int y = startY; y < endY; y++)
   {
-    for (int x = 0; x < 320; x++)
+    for (int x = startX; x < endX; x++)
     {
-      int srcIndex = ((239 - y) * 320) + x; 
+      int srcIndex = ((endY -1 - y) * endX) + x; 
 
-      int dstIndex = (y * 320) + x;
+      int dstIndex = (y * endX) + x;
 
       VGA[dstIndex] = arr[srcIndex];
     }
@@ -90,7 +90,7 @@ void clearVGADisplay()
 void displayLoading()
 {
   loadingBool = 1;
-  updateVGADisplay(LoadingOutput_bmp);
+  updateVGADisplay(LoadingOutput_bmp, 100, 200, 100, 130);
   loadingBool = 0;
 }
 
@@ -99,14 +99,14 @@ void initiatePicture(int kernel, int kernelSize)
   displayLoading();
   resetPixelData();
   blurring(output_bmp, kernel, kernelSize);
-  updateVGADisplay(output_bmp);
+  updateVGADisplay(output_bmp, 0, 320, 0, 240);
 }
 
 int main(void)
 {
   clearVGADisplay();
   blurring(output_bmp, 0, 0);
-  updateVGADisplay(output_bmp);
+  updateVGADisplay(output_bmp, 0, 320, 0, 240);
   init();
   while (1)
   {
