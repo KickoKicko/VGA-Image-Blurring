@@ -6,7 +6,6 @@
 #include "loadingPixelData.h"
 
 #include "dtekv-lib.h"
-#include "customHelper.h"
 #include "imageProcessing.h"
 
 extern void display_string(char *);
@@ -24,7 +23,6 @@ int btn_counter = 1;
 
 int loadingBool = 0;
 
-/* Add your code here for initializing interrupts. */
 void init(void)
 {
   int *interruptmaskSwitch = (int *)0x04000018;
@@ -32,30 +30,6 @@ void init(void)
   int *interruptmaskButton = (int *)0x040000d8;
   *interruptmaskButton = 0b1111111111;
   enable_interrupt();
-}
-
-/* Below is the function that will be called when an interrupt is triggered. */
-void handle_interrupt(unsigned cause)
-{
-  switch (cause)
-  {
-  case 17:
-    break;
-  case 18:
-    btn_counter++;
-    *edgecaptureButton = 0b1;
-
-    if (btn_counter % 2 == 0 && loadingBool == 0)
-    {
-      int kernel = (*switchData >> 8) & 0b11;
-      int kernelSize = *switchData & 0b111;
-      initiatePicture(kernel, kernelSize);
-    }
-    break;
-  default:
-    display_string("what??");
-    break;
-  }
 }
 
 void updateVGADisplay(unsigned char *arr, int startX, int endX, int startY, int endY)
@@ -104,6 +78,29 @@ void initiatePicture(int kernel, int kernelSize)
   resetPixelData();
   blurring(output_bmp, kernel, kernelSize);
   updateVGADisplay(output_bmp, 0, 320, 0, 240);
+}
+
+void handle_interrupt(unsigned cause)
+{
+  switch (cause)
+  {
+  case 17:
+    break;
+  case 18:
+    btn_counter++;
+    *edgecaptureButton = 0b1;
+
+    if (btn_counter % 2 == 0 && loadingBool == 0)
+    {
+      int kernel = (*switchData >> 8) & 0b11;
+      int kernelSize = *switchData & 0b111;
+      initiatePicture(kernel, kernelSize);
+    }
+    break;
+  default:
+    display_string("what??");
+    break;
+  }
 }
 
 int main(void)
