@@ -12,8 +12,8 @@
 extern void display_string(char *);
 extern void enable_interrupt(void);
 
-int outputHeight = 240;
-int outputWidth = 320;
+extern int outputHeight;
+extern int outputWidth;
 
 volatile char *VGA = (volatile char *)0x08000000;
 int *edgecaptureSwitch = (int *)0x0400001C;
@@ -58,12 +58,13 @@ void handle_interrupt(unsigned cause)
   }
 }
 
-void updateVGADisplay(unsigned char *arr, int startX, int endX, int startY, int endY){
+void updateVGADisplay(unsigned char *arr, int startX, int endX, int startY, int endY)
+{
   for (int y = startY; y < endY; y++)
   {
     for (int x = startX; x < endX; x++)
     {
-      int srcIndex = ((outputHeight -1 - y) * outputWidth) + x; 
+      int srcIndex = ((outputHeight - 1 - y) * outputWidth) + x;
 
       int dstIndex = (y * outputWidth) + x;
 
