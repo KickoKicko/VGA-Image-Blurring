@@ -21,10 +21,6 @@ $(EXE): $(SRC)
 
 # Run the executable with the input file
 run: $(EXE)
-	if [ -z "$(INPUT)" ]; then \
-		echo "Error: INPUT file not specified"; \
-		exit 1; \
-	fi
 	./$(EXE) $(INPUT)
 	xxd -i -n output_bmp -s 0x48A $(OUTPUT) > $(BOARD_DIR)/$(PIXELDATA_H)
 	xxd -i -n static_output_bmp -s 0x48A $(OUTPUT) > $(BOARD_DIR)/$(STATIC_PIXELDATA_H)
