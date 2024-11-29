@@ -1,4 +1,4 @@
-#include <stdint.h>
+#include <stddef.h>
 #include "customHelper.h"
 
 #define M_EULER 2.718281828459045235360287471352
