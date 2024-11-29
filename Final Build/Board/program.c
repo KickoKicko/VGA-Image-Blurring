@@ -54,8 +54,6 @@ void handle_interrupt(unsigned cause)
   }
 }
 
-
-
 void updateVGADisplay(int kernelType, int kernelRadie)
 {
   volatile char *VGA = (volatile char *)0x08000000;
