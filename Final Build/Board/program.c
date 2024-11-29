@@ -55,7 +55,7 @@ void handle_interrupt(unsigned cause)
   }
 }
 
-void updateVGADisplay(const char *arr){
+void updateVGADisplay(unsigned char *arr){
   for (int y = 0; y < 240; y++)
   {
     for (int x = 0; x < 320; x++)
