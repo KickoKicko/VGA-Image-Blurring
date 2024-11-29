@@ -20,17 +20,14 @@ int btn_counter = 1;
 
 int loadingBool = 0;
 
-void delay(unsigned int ms)
+/* Add your code here for initializing interrupts. */
+void init(void)
 {
-  volatile unsigned int i, j;
-  for (i = 0; i < ms; i++)
-  {
-    // Adjust the loop counts as necessary for your processor speed
-    for (j = 0; j < 1300; j++)
-    {
-      // Empty loop to create the delay
-    }
-  }
+  int *interruptmaskSwitch = (int *)0x04000018;
+  *interruptmaskSwitch = 0b1111111111;
+  int *interruptmaskButton = (int *)0x040000d8;
+  *interruptmaskButton = 0b1111111111;
+  enable_interrupt();
 }
 
 /* Below is the function that will be called when an interrupt is triggered. */
@@ -57,15 +54,7 @@ void handle_interrupt(unsigned cause)
   }
 }
 
-/* Add your code here for initializing interrupts. */
-void labinit(void)
-{
-  int *interruptmaskSwitch = (int *)0x04000018;
-  *interruptmaskSwitch = 0b1111111111;
-  int *interruptmaskButton = (int *)0x040000d8;
-  *interruptmaskButton = 0b1111111111;
-  enable_interrupt();
-}
+
 
 void updateVGADisplay(int kernelType, int kernelRadie)
 {
@@ -137,7 +126,7 @@ int main(void)
 {
   clearVGADisplay();
   updateVGADisplay(0, 0);
-  labinit();
+  init();
   while (1)
   {
     // make sure the program is running
