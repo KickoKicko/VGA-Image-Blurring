@@ -8,12 +8,12 @@ int staticKernel0(int *filterMatrix)
 
 int staticGaussianKernel1(int *filterMatrix)
 {
-    filterMatrix[0] = -1;
-    filterMatrix[1] = -2;
-    filterMatrix[2] = -1;
-    filterMatrix[3] = 0;
-    filterMatrix[4] = 0;
-    filterMatrix[5] = 0;
+    filterMatrix[0] = 1;
+    filterMatrix[1] = 2;
+    filterMatrix[2] = 1;
+    filterMatrix[3] = 2;
+    filterMatrix[4] = 4;
+    filterMatrix[5] = 2;
     filterMatrix[6] = 1;
     filterMatrix[7] = 2;
     filterMatrix[8] = 1;
@@ -23,32 +23,31 @@ int staticGaussianKernel1(int *filterMatrix)
 
 int staticGaussianKernel2(int *filterMatrix)
 {
-    filterMatrix[0] = -1;
-    filterMatrix[1] = -4;
-    filterMatrix[2] = -6;
-    filterMatrix[3] = -4;
-    filterMatrix[4] = -1;
-    filterMatrix[5] = -4;
-    filterMatrix[6] = 0;
-    filterMatrix[7] = 0;
-    filterMatrix[8] = 0;
-    filterMatrix[9] = 0;
-    filterMatrix[10] = 0;
-    filterMatrix[11] = 4;
-    filterMatrix[12] = 6;
-    filterMatrix[13] = 4;
-    filterMatrix[14] = 1;
-    filterMatrix[15] = 4;
-    filterMatrix[16] = 4;
-    filterMatrix[17] = 6;
-    filterMatrix[18] = 4;
-    filterMatrix[19] = 1;
-    filterMatrix[20] = 4;
-    filterMatrix[21] = 1;
-    filterMatrix[22] = 4;
-    filterMatrix[23] = 1;
-    filterMatrix[24] = 0;
-
+    filterMatrix[0] = 1;
+    filterMatrix[1] = 8;
+    filterMatrix[2] = 17;
+    filterMatrix[3] = 8;
+    filterMatrix[4] = 1;
+    filterMatrix[5] = 8;
+    filterMatrix[6] = 70;
+    filterMatrix[7] = 141;
+    filterMatrix[8] = 70;
+    filterMatrix[9] = 8;
+    filterMatrix[10] = 17;
+    filterMatrix[11] = 141;
+    filterMatrix[12] = 286;
+    filterMatrix[13] = 141;
+    filterMatrix[14] = 17;
+    filterMatrix[15] = 8;
+    filterMatrix[16] = 70;
+    filterMatrix[17] = 141;
+    filterMatrix[18] = 70;
+    filterMatrix[19] = 8;
+    filterMatrix[20] = 1;
+    filterMatrix[21] = 8;
+    filterMatrix[22] = 17;
+    filterMatrix[23] = 8;
+    filterMatrix[24] = 1;
     return 1266;
 }
 
