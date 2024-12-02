@@ -45,7 +45,7 @@ This project was developed using a **DE10-Lite board** equipped with the **DTEK-
   - **Implemented kernel sizes**:
 
     - **Box blur** and **motion blur** have dynamically scaled matrices.
-    - **Gaussian blur** has 3x3, 5x5, and 7x7 matrices implemented.
+    - **Gaussian blur** has 3x3, 5x5, and 7x7 matrices implemented. (Difference between 5x5 and 7x7 for gaussian blur is negligible for this resolution)
     - **Sharpen** does not change depending on the kernel size.
     - **Edge detection** has 3x3 and 5x5 matrices. (Results may vary with this one, depending on input image. It works well with our selecteed image.)
 
