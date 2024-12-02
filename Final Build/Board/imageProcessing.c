@@ -6,8 +6,8 @@
 #define M_EULER 2.718281828459045235360287471352
 #define M_PI 3.14159265358979323846
 
-int outputHeight = 240;
-int outputWidth = 320;
+const int outputHeight = 240;
+const int outputWidth = 320;
 
 int generateGaussianKernel(volatile int kernelRadie, int *filterMatrix)
 {

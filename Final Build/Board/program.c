@@ -2,7 +2,6 @@
 #include <stdlib.h>
 
 #include "pixeldata.h"
-#include "staticPixeldata.h"
 #include "loadingPixelData.h"
 
 #include "dtekv-lib.h"
@@ -11,8 +10,8 @@
 extern void display_string(char *);
 extern void enable_interrupt(void);
 
-extern int outputHeight;
-extern int outputWidth;
+extern const int outputHeight;
+extern const int outputWidth;
 
 volatile char *VGA = (volatile char *)0x08000000;
 int *edgecaptureSwitch = (int *)0x0400001C;
@@ -23,6 +22,8 @@ int btn_counter = 1;
 
 int loadingBool = 0;
 
+unsigned char staticPixelData[240 * 320];
+
 void init(void)
 {
   int *interruptmaskSwitch = (int *)0x04000018;
@@ -30,6 +31,15 @@ void init(void)
   int *interruptmaskButton = (int *)0x040000d8;
   *interruptmaskButton = 0b1111111111;
   enable_interrupt();
+}
+
+void createStaticPixelData(unsigned char *pixelData)
+{
+  for (int i = 0; i < outputHeight * outputWidth; i += 2)
+  {
+    staticPixelData[i] = pixelData[i];
+    staticPixelData[i + 1] = pixelData[i + 1]; // to trick the compiler into not using memcpy
+  }
 }
 
 void updateVGADisplay(unsigned char *arr, int startX, int endX, int startY, int endY)
@@ -51,14 +61,13 @@ void resetPixelData(void)
 {
   for (int i = 0; i < 76800; i += 2)
   {
-    output_bmp[i] = static_output_bmp[i];
-    output_bmp[i + 1] = static_output_bmp[i + 1];
+    output_bmp[i] = staticPixelData[i];
+    output_bmp[i + 1] = staticPixelData[i + 1];
   }
 }
 
 void clearVGADisplay()
 {
-  volatile char *VGA = (volatile char *)0x08000000;
   for (int i = 0; i < 320 * 240; i++)
   {
     VGA[i] = 0x00;
@@ -105,6 +114,7 @@ void handle_interrupt(unsigned cause)
 
 int main(void)
 {
+  createStaticPixelData(output_bmp);
   clearVGADisplay();
   blurring(output_bmp, 0, 0);
   updateVGADisplay(output_bmp, 0, outputWidth, 0, outputHeight);
