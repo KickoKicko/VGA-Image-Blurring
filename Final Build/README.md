@@ -24,7 +24,7 @@ This project was developed using a **DE10-Lite board** equipped with the **DTEK-
 
 - The **switches** are used to select the kernel type and kernel size:
 
-  - The **three leftmost switches** determine the kernel type. These switches represent a binary number in **little-endian order**, where each switch corresponds to a single bit. The kernel types available are as follows:
+  - The **three leftmost switches** determine the kernel type. These switches represent a binary number in **little-endian order**, where each switch corresponds to a single bit. They can only reach a maximum value of 4, as there are only 5 kernels available (0 to 4). The kernel types available are as follows:
 
     - **0**: Box blur
     - **1**: Gaussian blur
@@ -37,18 +37,14 @@ This project was developed using a **DE10-Lite board** equipped with the **DTEK-
     - **1**: 3x3 matrix
     - **2**: 5x5 matrix
     - **3**: 7x7 matrix
-    - and so on (for the ones that have them implemented).
+    - and so on (for the ones that have them implemented. Nothing will happen when trying to apply a non-implemented kernel size on a kernel type).
 
-  - **Important Notes**:
+  - **Implemented kernel sizes**:
 
-    - **Box blur** and **motion blur** have dynamically scaled matrices.
+    - **Box blur** and **motion blur** have dynamically scaled matrices. 
     - **Gaussian blur** has 3x3, 5x5, and 7x7 matrices implemented.
     - **Edge detection** has 3x3 and 5x5 matrices.
     - **Sharpen** does not change depending on the kernel size.
-
-- **Clarification on Kernel Selection**:
-
-  - **Only the three leftmost switches** are used for kernel selection and can only reach a maximum value of 4, as there are only 5 kernels available (0 to 4).
 
 - **Applying Your Selection**
 
@@ -58,8 +54,6 @@ This project was developed using a **DE10-Lite board** equipped with the **DTEK-
   - The display will show the chosen kernel and kernel size in the format:
     > kernelType ---- kernelSize.
   - The LEDs will indicate the progress of applying a kernel, acting as a loading bar.
-
-### Kernel Size Details
 
 ## Downloading and Using Another Image
 
