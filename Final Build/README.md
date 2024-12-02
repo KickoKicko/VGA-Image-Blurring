@@ -36,6 +36,7 @@ This project was developed using a **DE10-Lite board** equipped with the **DTEK-
 
   - The kernel size is determined by the three rightmost switches, with the following mapping:
 
+    - **0**: 1x1 matrix (will output the original image)
     - **1**: 3x3 matrix
     - **2**: 5x5 matrix
     - **3**: 7x7 matrix
