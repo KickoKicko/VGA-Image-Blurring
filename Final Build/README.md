@@ -42,7 +42,7 @@ This is the most straightforward way to run our project—simply use the prepare
 
 3. **Run the Conversion Command**
    - Use the command: `make INPUT=<inputBMP.bmp>`
-     - _Note_: The exact `make` command may vary depending on your terminal or other factors, such as the version or configuration of `gcc` being used.
+     > **Note**: The exact `make` command may vary depending on your terminal or other factors, such as the version or configuration of `gcc` being used.
    - After this, the program can be compiled and run on the board as before, and the new image will be used.
 
 - **Image Requirements**
