@@ -13,7 +13,8 @@ This project was developed using a **DE10-Lite board** equipped with the **DTEK-
    - Ensure you are in the `../Final Build/Board` directory.
 
 2. **Compile the Program**
-   > This step is not necessary, but we included it as a precaution.
+
+   > This step is only necessary if the image has been replaced as described in the end of this document.
 
    - Run the `make` command.
 
@@ -42,10 +43,10 @@ This project was developed using a **DE10-Lite board** equipped with the **DTEK-
 
   - **Implemented kernel sizes**:
 
-    - **Box blur** and **motion blur** have dynamically scaled matrices. 
+    - **Box blur** and **motion blur** have dynamically scaled matrices.
     - **Gaussian blur** has 3x3, 5x5, and 7x7 matrices implemented.
-    - **Edge detection** has 3x3 and 5x5 matrices.
     - **Sharpen** does not change depending on the kernel size.
+    - **Edge detection** has 3x3 and 5x5 matrices. (Results may vary with this one, depending on input image. It works well with our selecteed image.)
 
 - **Applying Your Selection**
 
@@ -73,6 +74,7 @@ This project was developed using a **DE10-Lite board** equipped with the **DTEK-
 3. **Run the Conversion Command**
 
    - Use the command: `make INPUT=<yourInputBMP.bmp>`. The input file must be in the Convert directory, otherwise file path must be stated.
+
      > **Note**: The output file might look weird or not display at all in windows. It should work on the board.
 
      > **Note**: The exact `make` command may vary depending on your terminal or other factors, such as the version or configuration of `gcc` being used.

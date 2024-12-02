@@ -1545,7 +1545,7 @@ Disassembly of section .text:
     16ec:	00f52c23          	sw	a5,24(a0)
     16f0:	00f52e23          	sw	a5,28(a0)
     16f4:	02f52023          	sw	a5,32(a0)
-    16f8:	00a00513          	li	a0,10
+    16f8:	00700513          	li	a0,7
     16fc:	00008067          	ret
 
 00001700 <staticEdgeDetectionKernel2>:
