@@ -17,18 +17,49 @@ This project was developed using a **DE10-Lite board** equipped with the **DTEK-
    - Run the `make` command.
 
 3. **Execute the Program**
+
    - Run `dtekv-run main.bin`.
 
 ### Using the Switches and Button
 
 - The **switches** are used to select the kernel type and kernel size:
 
-  - The **two leftmost switches** determine the kernel type. These switches represent a binary number in **little-endian order**, where each switch corresponds to a single bit.
+  - The **three leftmost switches** determine the kernel type. These switches represent a binary number in **little-endian order**, where each switch corresponds to a single bit. The kernel types available are as follows:
 
-  - The **three rightmost switches** determine the kernel size.
+    - **0**: Box blur
+    - **1**: Gaussian blur
+    - **2**: Sharpen
+    - **3**: Motion blur
+    - **4**: Edge detection
+
+  - The kernel size is determined by the three rightmost switches, with the following mapping:
+
+    - **1**: 3x3 matrix
+    - **2**: 5x5 matrix
+    - **3**: 7x7 matrix
+    - and so on (for the ones that have them implemented).
+
+  - **Important Notes**:
+
+    - **Box blur** and **motion blur** have dynamically scaled matrices.
+    - **Gaussian blur** has 3x3, 5x5, and 7x7 matrices implemented.
+    - **Edge detection** has 3x3 and 5x5 matrices.
+    - **Sharpen** does not change depending on the kernel size.
+
+- **Clarification on Kernel Selection**:
+
+  - **Only the three leftmost switches** are used for kernel selection and can only reach a maximum value of 4, as there are only 5 kernels available (0 to 4).
 
 - **Applying Your Selection**
+
   - After setting the desired switch states, press the **button** to apply the chosen kernel type and size.
+
+- 7-Segment-Display Menu:
+  - The display will show the chosen kernel and kernel size in the format:
+    > kernelType ---- kernelSize.
+  - The LEDs will indicate the progress of applying a kernel, acting as a loading bar.
+
+### Kernel Size Details
 
 ## Downloading and Using Another Image
 
@@ -45,8 +76,11 @@ This project was developed using a **DE10-Lite board** equipped with the **DTEK-
    - Move to the `../Final Build/Convert` directory.
 
 3. **Run the Conversion Command**
+
    - Use the command: `make INPUT=<inputBMP.bmp>`
+
      > **Note**: The exact `make` command may vary depending on your terminal or other factors, such as the version or configuration of `gcc` being used.
+
    - After this, the program can be compiled and run on the board as before, and the new image will be used.
 
 - **Image Requirements**

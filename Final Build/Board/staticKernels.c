@@ -123,7 +123,6 @@ int staticEdgeDetectionKernel1(int *filterMatrix)
 
 int staticEdgeDetectionKernel2(int *filterMatrix)
 {
-    // Fill the filter matrix with the correct values for a 5x5 edge detection kernel
     filterMatrix[0] = -1;
     filterMatrix[1] = -1;
     filterMatrix[2] = -2;
