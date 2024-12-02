@@ -1,5 +1,9 @@
 # Instructions on How to Use Our Program
 
+## Overview
+
+This project was developed using a **DE10-Lite board** equipped with the **DTEK-V toolboard**. Ensure you are in an environment where the **DTEK-V toolchain** is available.
+
 ## Running the Code with Our Selected and Prepared Image
 
 > This is the most straightforward way to run our project—simply use the prepared image by following these steps.
@@ -34,7 +38,7 @@
 
    - This process does not run on the board. It converts the input image to the required 24-bit BMP format and embeds it into the binary file. Ensure you are in an environment capable of running `gcc`.
 
-     > **Note"**: The `xxd` command is needed for the conversion code to work. Make sure it is available in your environment.
+     > **Note**: The `xxd` command is needed for the conversion code to work. Make sure it is available in your environment.
 
 2. **Navigate to the Appropriate Directory**
 
@@ -47,5 +51,5 @@
 
 - **Image Requirements**
 
-  - The input image must be a 24-bit BMP file. The simplest way to create one is to open the image in Microsoft Paint and save it as a `.BMP` file.
+  - The input image must be a 24-bit BMP file. The simplest way to create one is to open the image in **Microsoft Paint** and save it as a `.BMP` file.
   - Some 24-bit BMP files have been provided in the `Convert` directory for testing purposes.
