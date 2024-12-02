@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include "imageProcessing.h"
 #include "customHelper.h"
+#include "gaussianMatrices.h"
 
 #define M_EULER 2.718281828459045235360287471352
 #define M_PI 3.14159265358979323846
@@ -86,7 +87,22 @@ int *matrixGenerator(int blurType, int kernelSize, volatile int kernelRadie, int
   }
   else if (blurType == 1) // GaussianBlur
   {
-    *sumPointer = generateGaussianKernel(kernelRadie, filterMatrix);
+    if (kernelRadie == 1)
+    {
+      *sumPointer = staticGaussianKernel1(filterMatrix);
+    }
+    else if (kernelRadie == 2)
+    {
+      *sumPointer = staticGaussianKernel2(filterMatrix);
+    }
+    else if (kernelRadie == 3)
+    {
+      *sumPointer = staticGaussianKernel3(filterMatrix);
+    }
+    else if (kernelRadie > 3)
+    {
+      return 0;
+    }
   }
   else if (blurType == 2) // Sharpen
   {
@@ -176,7 +192,10 @@ void blurring(uint8_t *pixelData, int blurType, volatile int kernelRadie)
       }
       int sum = 0;
       int filterMatrix[kernelSize];
-      matrixGenerator(blurType, kernelSize, kernelRadie, &sum, filterMatrix);
+      if (!matrixGenerator(blurType, kernelSize, kernelRadie, &sum, filterMatrix))
+      {
+        return;
+      }
       if (blurType == 0)
       { // Box
         tempPixelData[position] = blurringKernel(temp, filterMatrix, kernelSize, kernelSize);
