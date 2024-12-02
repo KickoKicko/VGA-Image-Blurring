@@ -1,5 +1,10 @@
 #include "gaussianMatrices.h"
 
+int staticGaussianKernel0(int *filterMatrix)
+{
+    filterMatrix[0] = 1;
+    return 1;
+}
 int staticGaussianKernel1(int *filterMatrix)
 {
     filterMatrix[0] = 1;

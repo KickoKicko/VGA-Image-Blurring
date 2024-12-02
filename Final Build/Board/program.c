@@ -83,10 +83,10 @@ void displayLoading()
 
 void initiatePicture(int kernel, int kernelSize)
 {
-  displayLoading();
-  resetPixelData();
+  // displayLoading();
+  // resetPixelData();
   blurring(output_bmp, kernel, kernelSize);
-  updateVGADisplay(output_bmp, 0, 320, 0, 240);
+  // updateVGADisplay(output_bmp, 0, 320, 0, 240);
 }
 
 void handle_interrupt(unsigned cause)
@@ -116,8 +116,8 @@ int main(void)
 {
   createStaticPixelData(output_bmp);
   clearVGADisplay();
-  blurring(output_bmp, 0, 0);
-  updateVGADisplay(output_bmp, 0, outputWidth, 0, outputHeight);
+  // blurring(output_bmp, 0, 0);
+  // updateVGADisplay(output_bmp, 0, outputWidth, 0, outputHeight);
   init();
   while (1)
   {

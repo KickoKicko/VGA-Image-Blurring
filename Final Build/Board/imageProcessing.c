@@ -10,6 +10,8 @@
 const int outputHeight = 240;
 const int outputWidth = 320;
 
+volatile char *VGA1 = (volatile char *)0x08000000;
+
 int generateGaussianKernel(volatile int kernelRadie, int *filterMatrix)
 {
   double sigma = 0.84089642;
@@ -32,6 +34,11 @@ int generateGaussianKernel(volatile int kernelRadie, int *filterMatrix)
 void generateSharpenKernel(volatile int kernelRadie, int *filterMatrix)
 {
   int count = 0;
+  if (kernelRadie == 0)
+  {
+    filterMatrix[0] = 1;
+    return 0;
+  }
   // Generate the kernel values
   for (int y = -kernelRadie; y <= kernelRadie; y++)
   {
@@ -87,9 +94,13 @@ int *matrixGenerator(int blurType, int kernelSize, volatile int kernelRadie, int
   }
   else if (blurType == 1) // GaussianBlur
   {
-    if (kernelRadie == 1)
+    if (kernelRadie == 0)
     {
-      *sumPointer = staticGaussianKernel1(filterMatrix);
+      *sumPointer = staticGaussianKernel0(filterMatrix);
+    }
+    else if (kernelRadie == 1)
+    {
+      *sumPointer = staticGaussianKernel2(filterMatrix);
     }
     else if (kernelRadie == 2)
     {
@@ -159,10 +170,10 @@ void paddingKernel(volatile int kernelRadie, uint8_t *pixels, int x2, int y2, ui
 
 void blurring(uint8_t *pixelData, int blurType, volatile int kernelRadie)
 {
-  if (kernelRadie == 0)
-  {
-    return;
-  }
+  // if (kernelRadie == 0)
+  // {
+  //   return;
+  // }
 
   // Statically allocate memory for the temporary pixel data
   uint8_t tempPixelData[240 * 320];
@@ -196,29 +207,30 @@ void blurring(uint8_t *pixelData, int blurType, volatile int kernelRadie)
       {
         return;
       }
+      position = x + ((outputHeight - y) * outputWidth);
       if (blurType == 0)
       { // Box
-        tempPixelData[position] = blurringKernel(temp, filterMatrix, kernelSize, kernelSize);
+        VGA1[position] = blurringKernel(temp, filterMatrix, kernelSize, kernelSize);
       }
       else if (blurType == 1)
       { // Gaussian
-        tempPixelData[position] = blurringKernel(temp, filterMatrix, sum, kernelSize);
+        VGA1[position] = blurringKernel(temp, filterMatrix, sum, kernelSize);
       }
       else if (blurType == 2)
       { // Sharpen
-        tempPixelData[position] = blurringKernel(temp, filterMatrix, 1, kernelSize);
+        VGA1[position] = blurringKernel(temp, filterMatrix, 1, kernelSize);
       }
       else if (blurType == 3)
       { // Motion
-        tempPixelData[position] = blurringKernel(temp, filterMatrix, kernelRadie * 2 + 1, kernelSize);
+        VGA1[position] = blurringKernel(temp, filterMatrix, kernelRadie * 2 + 1, kernelSize);
       }
     }
   }
 
   // ändring 3
-  for (int i = 0; i < 76800; i += 2)
-  {
-    pixelData[i] = tempPixelData[i];
-    pixelData[i + 1] = tempPixelData[i + 1]; // to trick the compiler into not using memcpy
-  }
+  // for (int i = 0; i < 76800; i += 2)
+  // {
+  //   pixelData[i] = tempPixelData[i];
+  //   pixelData[i + 1] = tempPixelData[i + 1]; // to trick the compiler into not using memcpy
+  // }
 }
