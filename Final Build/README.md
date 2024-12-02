@@ -2,7 +2,7 @@
 
 ## Running the Code with Our Selected and Prepared Image
 
-This is the most straightforward way to run our project—simply use the prepared image by following these steps.
+> This is the most straightforward way to run our project—simply use the prepared image by following these steps.
 
 1. **Navigate to the Appropriate Directory**
 
