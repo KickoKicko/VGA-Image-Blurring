@@ -2,10 +2,7 @@
 #include <stddef.h>
 #include "imageProcessing.h"
 #include "customHelper.h"
-#include "gaussianMatrices.h"
-
-#define M_EULER 2.718281828459045235360287471352
-#define M_PI 3.14159265358979323846
+#include "staticKernels.h"
 
 const int outputHeight = 240;
 const int outputWidth = 320;
@@ -13,6 +10,8 @@ const int outputWidth = 320;
 volatile char *VGA = (volatile char *)0x08000000;
 
 // works with floating values, however not on the board
+// #define M_EULER 2.718281828459045235360287471352
+// #define M_PI 3.14159265358979323846
 // int generateGaussianKernel(volatile int kernelRadie, int *filterMatrix)
 // {
 //   double sigma = 0.84089642;
@@ -105,7 +104,7 @@ int *matrixGenerator(int blurType, int kernelSize, volatile int kernelRadie, int
     switch (kernelRadie)
     {
     case 0:
-      *sumPointer = staticGaussianKernel0(filterMatrix);
+      *sumPointer = staticKernel0(filterMatrix);
       break;
     case 1:
       *sumPointer = staticGaussianKernel1(filterMatrix);
@@ -139,6 +138,22 @@ int *matrixGenerator(int blurType, int kernelSize, volatile int kernelRadie, int
           filterMatrix[i * (kernelRadie * 2 + 1) + j] = 0;
         }
       }
+    }
+    break;
+  case 4: // EdgeDetection
+    switch (kernelRadie)
+    {
+    case 0:
+      *sumPointer = staticKernel0(filterMatrix);
+      break;
+    case 1:
+      *sumPointer = staticEdgeDetectionKernel1(filterMatrix);
+      break;
+    case 2:
+      *sumPointer = staticEdgeDetectionKernel2(filterMatrix);
+      break;
+    default:
+      return 0;
     }
     break;
 
@@ -236,6 +251,10 @@ void blurring(uint8_t *pixelData, int blurType, volatile int kernelRadie)
 
       case 3: // Motion
         VGA[position] = blurringKernel(temp, filterMatrix, kernelRadie * 2 + 1, kernelSize);
+        break;
+
+      case 4: // EdgeDetection
+        VGA[position] = blurringKernel(temp, filterMatrix, sum, kernelSize);
         break;
 
       default:
