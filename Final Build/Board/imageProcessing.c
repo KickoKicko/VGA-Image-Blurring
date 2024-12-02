@@ -2,36 +2,49 @@
 #include <stddef.h>
 #include "imageProcessing.h"
 #include "customHelper.h"
-#include "gaussianMatrices.h"
-
-#define M_EULER 2.718281828459045235360287471352
-#define M_PI 3.14159265358979323846
+#include "staticKernels.h"
 
 const int outputHeight = 240;
 const int outputWidth = 320;
 
-int generateGaussianKernel(volatile int kernelRadie, int *filterMatrix)
+volatile char *VGA = (volatile char *)0x08000000;
+
+// works with floating values, however not on the board
+// #define M_EULER 2.718281828459045235360287471352
+// #define M_PI 3.14159265358979323846
+// int generateGaussianKernel(volatile int kernelRadie, int *filterMatrix)
+// {
+//   double sigma = 0.84089642;
+//   int sum = 0;
+//   int count = 0;
+//   // Generate the kernel values
+//   double multiplier = 1 / (pow(M_EULER, (-((kernelRadie * kernelRadie) * 2) / (2 * sigma * sigma))) / (2 * M_PI * sigma * sigma));
+//   for (int y = -kernelRadie; y <= kernelRadie; y++)
+//   {
+//     for (int x = -kernelRadie; x <= kernelRadie; x++)
+//     {
+//       filterMatrix[count] = roundf(multiplier * pow(M_EULER, (-((x * x) + (y * y)) / (2 * sigma * sigma))) / (2 * M_PI * sigma * sigma));
+//       sum += filterMatrix[count];
+//       count++;
+//     }
+//   }
+//   return sum;
+// }
+
+void set_leds(int value)
 {
-  double sigma = 0.84089642;
-  int sum = 0;
-  int count = 0;
-  // Generate the kernel values
-  double multiplier = 1 / (custom_pow(M_EULER, (-((kernelRadie * kernelRadie) * 2) / (2 * sigma * sigma))) / (2 * M_PI * sigma * sigma));
-  for (int y = -kernelRadie; y <= kernelRadie; y++)
-  {
-    for (int x = -kernelRadie; x <= kernelRadie; x++)
-    {
-      filterMatrix[count] = custom_round(multiplier * custom_pow(M_EULER, (-((x * x) + (y * y)) / (2 * sigma * sigma))) / (2 * M_PI * sigma * sigma));
-      sum += filterMatrix[count];
-      count++;
-    }
-  }
-  return sum;
+  volatile int *LED = (volatile int *)0x04000000;
+  *LED = value & 0x3FF;
 }
 
 void generateSharpenKernel(volatile int kernelRadie, int *filterMatrix)
 {
   int count = 0;
+  if (kernelRadie == 0)
+  {
+    filterMatrix[0] = 1;
+    return;
+  }
   // Generate the kernel values
   for (int y = -kernelRadie; y <= kernelRadie; y++)
   {
@@ -69,47 +82,49 @@ uint8_t blurringKernel(uint8_t arr[], int filterMatrix[], int total, int arrSize
   greenTotal = (greenTotal + (total / 2)) / total;
   redTotal = (redTotal + (total / 2)) / total;
 
-  blueTotal = my_max(0, my_min(3, blueTotal));
-  greenTotal = my_max(0, my_min(7, greenTotal));
-  redTotal = my_max(0, my_min(7, redTotal));
+  blueTotal = max(0, min(3, blueTotal));
+  greenTotal = max(0, min(7, greenTotal));
+  redTotal = max(0, min(7, redTotal));
   return blueTotal + (greenTotal << 2) + (redTotal << 5);
 }
 
 int *matrixGenerator(int blurType, int kernelSize, volatile int kernelRadie, int *sumPointer, int *filterMatrix)
 {
   // Initialize the filterMatrix based on the blur type
-  if (blurType == 0) // BoxBlur
+  switch (blurType)
   {
+  case 0: // BoxBlur
     for (int i = 0; i < kernelSize; i++)
     {
       filterMatrix[i] = 1;
     }
-  }
-  else if (blurType == 1) // GaussianBlur
-  {
-    if (kernelRadie == 1)
+    break;
+
+  case 1: // GaussianBlur
+    switch (kernelRadie)
     {
+    case 0:
+      *sumPointer = staticKernel0(filterMatrix);
+      break;
+    case 1:
       *sumPointer = staticGaussianKernel1(filterMatrix);
-    }
-    else if (kernelRadie == 2)
-    {
+      break;
+    case 2:
       *sumPointer = staticGaussianKernel2(filterMatrix);
-    }
-    else if (kernelRadie == 3)
-    {
+      break;
+    case 3:
       *sumPointer = staticGaussianKernel3(filterMatrix);
-    }
-    else if (kernelRadie > 3)
-    {
+      break;
+    default:
       return 0;
     }
-  }
-  else if (blurType == 2) // Sharpen
-  {
+    break;
+
+  case 2: // Sharpen
     generateSharpenKernel(kernelRadie, filterMatrix);
-  }
-  else if (blurType == 3) // MotionBlur
-  {
+    break;
+
+  case 3: // MotionBlur
     for (int i = 0; i < kernelRadie * 2 + 1; i++)
     {
       for (int j = 0; j < kernelRadie * 2 + 1; j++)
@@ -124,6 +139,26 @@ int *matrixGenerator(int blurType, int kernelSize, volatile int kernelRadie, int
         }
       }
     }
+    break;
+  case 4: // EdgeDetection
+    switch (kernelRadie)
+    {
+    case 0:
+      *sumPointer = staticKernel0(filterMatrix);
+      break;
+    case 1:
+      *sumPointer = staticEdgeDetectionKernel1(filterMatrix);
+      break;
+    case 2:
+      *sumPointer = staticEdgeDetectionKernel2(filterMatrix);
+      break;
+    default:
+      return 0;
+    }
+    break;
+
+  default:
+    return 0;
   }
 
   return filterMatrix;
@@ -157,16 +192,24 @@ void paddingKernel(volatile int kernelRadie, uint8_t *pixels, int x2, int y2, ui
   }
 }
 
+int calculate_led_value(int currentRow, int totalRows)
+{
+  double progress = (double)currentRow / totalRows;
+  int value = (int)(progress * 10);
+  int ledBinary = (1 << value) - 1;
+  return ledBinary;
+}
+
 void blurring(uint8_t *pixelData, int blurType, volatile int kernelRadie)
 {
-  if (kernelRadie == 0)
+  int sum = 0;
+  int kernelSize = (kernelRadie * 2 + 1) * (kernelRadie * 2 + 1);
+  int filterMatrix[kernelSize];
+
+  if (!matrixGenerator(blurType, kernelSize, kernelRadie, &sum, filterMatrix))
   {
     return;
   }
-
-  // Statically allocate memory for the temporary pixel data
-  uint8_t tempPixelData[240 * 320];
-  int kernelSize = (kernelRadie * 2 + 1) * (kernelRadie * 2 + 1);
   for (int y = 0; y < outputHeight; y++)
   {
     for (int x = 0; x < outputWidth; x++)
@@ -190,35 +233,37 @@ void blurring(uint8_t *pixelData, int blurType, volatile int kernelRadie)
           }
         }
       }
-      int sum = 0;
-      int filterMatrix[kernelSize];
-      if (!matrixGenerator(blurType, kernelSize, kernelRadie, &sum, filterMatrix))
+
+      position = x + ((outputHeight - y) * outputWidth);
+      switch (blurType)
       {
-        return;
-      }
-      if (blurType == 0)
-      { // Box
-        tempPixelData[position] = blurringKernel(temp, filterMatrix, kernelSize, kernelSize);
-      }
-      else if (blurType == 1)
-      { // Gaussian
-        tempPixelData[position] = blurringKernel(temp, filterMatrix, sum, kernelSize);
-      }
-      else if (blurType == 2)
-      { // Sharpen
-        tempPixelData[position] = blurringKernel(temp, filterMatrix, 1, kernelSize);
-      }
-      else if (blurType == 3)
-      { // Motion
-        tempPixelData[position] = blurringKernel(temp, filterMatrix, kernelRadie * 2 + 1, kernelSize);
+      case 0: // Box
+        VGA[position] = blurringKernel(temp, filterMatrix, kernelSize, kernelSize);
+        break;
+
+      case 1: // Gaussian
+        VGA[position] = blurringKernel(temp, filterMatrix, sum, kernelSize);
+        break;
+
+      case 2: // Sharpen
+        VGA[position] = blurringKernel(temp, filterMatrix, 1, kernelSize);
+        break;
+
+      case 3: // Motion
+        VGA[position] = blurringKernel(temp, filterMatrix, kernelRadie * 2 + 1, kernelSize);
+        break;
+
+      case 4: // EdgeDetection
+        VGA[position] = blurringKernel(temp, filterMatrix, sum, kernelSize);
+        break;
+
+      default:
+        break;
       }
     }
+    // Update LED progress display
+    int ledValue = calculate_led_value(y, outputHeight);
+    set_leds(ledValue);
   }
-
-  // ändring 3
-  for (int i = 0; i < 76800; i += 2)
-  {
-    pixelData[i] = tempPixelData[i];
-    pixelData[i + 1] = tempPixelData[i + 1]; // to trick the compiler into not using memcpy
-  }
+  set_leds(0b1111111111);
 }

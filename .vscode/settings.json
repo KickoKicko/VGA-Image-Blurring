@@ -7,6 +7,7 @@
     "8bitreferencekernels.h": "c",
     "stdlib.h": "c",
     "pixeldata.h": "c",
-    "loadingpixeldata.h": "c"
+    "loadingpixeldata.h": "c",
+    "statickernels.h": "c"
   }
 }
