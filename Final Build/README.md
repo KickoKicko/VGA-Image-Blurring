@@ -13,6 +13,7 @@ This project was developed using a **DE10-Lite board** equipped with the **DTEK-
    - Ensure you are in the `../Final Build/Board` directory.
 
 2. **Compile the Program**
+   > This step is not necessary, but we included it as a precaution.
 
    - Run the `make` command.
 
@@ -37,7 +38,7 @@ This project was developed using a **DE10-Lite board** equipped with the **DTEK-
     - **1**: 3x3 matrix
     - **2**: 5x5 matrix
     - **3**: 7x7 matrix
-    - and so on (for the ones that have them implemented. Nothing will happen when trying to apply a non-implemented kernel size on a kernel type).
+    - and so on (for the ones that have them implemented. Applying a kernel size that has not been implemented for a given kernel type will have no effect.)
 
   - **Implemented kernel sizes**:
 
@@ -61,7 +62,7 @@ This project was developed using a **DE10-Lite board** equipped with the **DTEK-
 
 1. **Prepare the Environment**
 
-   - This process does not run on the board. It converts the input image to the required 24-bit BMP format and embeds it into the binary file. Ensure you are in an environment capable of running `gcc`.
+   - This process does not run on the board. It converts the input image to the required 8-bit BMP format and embeds it into the binary file. Ensure you are in an environment capable of running `gcc`.
 
      > **Note**: The `xxd` command is needed for the conversion code to work. Make sure it is available in your environment.
 
@@ -71,7 +72,8 @@ This project was developed using a **DE10-Lite board** equipped with the **DTEK-
 
 3. **Run the Conversion Command**
 
-   - Use the command: `make INPUT=<inputBMP.bmp>`
+   - Use the command: `make INPUT=<yourInputBMP.bmp>`. The input file must be in the Convert directory, otherwise file path must be stated.
+     > **Note**: The output file might look weird or not display at all in windows. It should work on the board.
 
      > **Note**: The exact `make` command may vary depending on your terminal or other factors, such as the version or configuration of `gcc` being used.
 
