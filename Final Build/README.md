@@ -76,7 +76,7 @@ This project was developed using a **DE10-Lite board** equipped with the **DTEK-
 
    - Use the command: `make INPUT=<yourInputBMP.bmp>`. The input file must be in the Convert directory, otherwise file path must be stated.
 
-     > **Note**: The output file might look weird or not display at all in windows. It should work on the board.
+     > **Note**: The output file might look weird or not display at all on your OS. It should work on the VGA display connected to the board.
 
      > **Note**: The exact `make` command may vary depending on your terminal or other factors, such as the version or configuration of `gcc` being used.
 
