@@ -10,25 +10,32 @@
 const int outputHeight = 240;
 const int outputWidth = 320;
 
-volatile char *VGA1 = (volatile char *)0x08000000;
+volatile char *VGA = (volatile char *)0x08000000;
 
-int generateGaussianKernel(volatile int kernelRadie, int *filterMatrix)
+// works with floating values
+// int generateGaussianKernel(volatile int kernelRadie, int *filterMatrix)
+// {
+//   double sigma = 0.84089642;
+//   int sum = 0;
+//   int count = 0;
+//   // Generate the kernel values
+//   double multiplier = 1 / (pow(M_EULER, (-((kernelRadie * kernelRadie) * 2) / (2 * sigma * sigma))) / (2 * M_PI * sigma * sigma));
+//   for (int y = -kernelRadie; y <= kernelRadie; y++)
+//   {
+//     for (int x = -kernelRadie; x <= kernelRadie; x++)
+//     {
+//       filterMatrix[count] = roundf(multiplier * pow(M_EULER, (-((x * x) + (y * y)) / (2 * sigma * sigma))) / (2 * M_PI * sigma * sigma));
+//       sum += filterMatrix[count];
+//       count++;
+//     }
+//   }
+//   return sum;
+// }
+
+void set_leds(int value)
 {
-  double sigma = 0.84089642;
-  int sum = 0;
-  int count = 0;
-  // Generate the kernel values
-  double multiplier = 1 / (custom_pow(M_EULER, (-((kernelRadie * kernelRadie) * 2) / (2 * sigma * sigma))) / (2 * M_PI * sigma * sigma));
-  for (int y = -kernelRadie; y <= kernelRadie; y++)
-  {
-    for (int x = -kernelRadie; x <= kernelRadie; x++)
-    {
-      filterMatrix[count] = custom_round(multiplier * custom_pow(M_EULER, (-((x * x) + (y * y)) / (2 * sigma * sigma))) / (2 * M_PI * sigma * sigma));
-      sum += filterMatrix[count];
-      count++;
-    }
-  }
-  return sum;
+  volatile int *LED = (volatile int *)0x04000000;
+  *LED = value & 0x3FF;
 }
 
 void generateSharpenKernel(volatile int kernelRadie, int *filterMatrix)
@@ -37,7 +44,7 @@ void generateSharpenKernel(volatile int kernelRadie, int *filterMatrix)
   if (kernelRadie == 0)
   {
     filterMatrix[0] = 1;
-    return 0;
+    return;
   }
   // Generate the kernel values
   for (int y = -kernelRadie; y <= kernelRadie; y++)
@@ -168,16 +175,24 @@ void paddingKernel(volatile int kernelRadie, uint8_t *pixels, int x2, int y2, ui
   }
 }
 
+int calculate_led_value(int currentRow, int totalRows)
+{
+  double progress = (double)currentRow / totalRows; // Calculate progress percentage
+  int value = (int)(progress * 10);                 // Scale to 0-10 (1 LED per 10% increment)
+  int ledBinary = (1 << value) - 1;                 // Convert to binary representation for LEDs
+  return ledBinary;
+}
+
 void blurring(uint8_t *pixelData, int blurType, volatile int kernelRadie)
 {
-  // if (kernelRadie == 0)
-  // {
-  //   return;
-  // }
-
-  // Statically allocate memory for the temporary pixel data
-  uint8_t tempPixelData[240 * 320];
+  int sum = 0;
   int kernelSize = (kernelRadie * 2 + 1) * (kernelRadie * 2 + 1);
+  int filterMatrix[kernelSize];
+
+  if (!matrixGenerator(blurType, kernelSize, kernelRadie, &sum, filterMatrix))
+  {
+    return;
+  }
   for (int y = 0; y < outputHeight; y++)
   {
     for (int x = 0; x < outputWidth; x++)
@@ -201,36 +216,28 @@ void blurring(uint8_t *pixelData, int blurType, volatile int kernelRadie)
           }
         }
       }
-      int sum = 0;
-      int filterMatrix[kernelSize];
-      if (!matrixGenerator(blurType, kernelSize, kernelRadie, &sum, filterMatrix))
-      {
-        return;
-      }
+
       position = x + ((outputHeight - y) * outputWidth);
       if (blurType == 0)
       { // Box
-        VGA1[position] = blurringKernel(temp, filterMatrix, kernelSize, kernelSize);
+        VGA[position] = blurringKernel(temp, filterMatrix, kernelSize, kernelSize);
       }
       else if (blurType == 1)
       { // Gaussian
-        VGA1[position] = blurringKernel(temp, filterMatrix, sum, kernelSize);
+        VGA[position] = blurringKernel(temp, filterMatrix, sum, kernelSize);
       }
       else if (blurType == 2)
       { // Sharpen
-        VGA1[position] = blurringKernel(temp, filterMatrix, 1, kernelSize);
+        VGA[position] = blurringKernel(temp, filterMatrix, 1, kernelSize);
       }
       else if (blurType == 3)
       { // Motion
-        VGA1[position] = blurringKernel(temp, filterMatrix, kernelRadie * 2 + 1, kernelSize);
+        VGA[position] = blurringKernel(temp, filterMatrix, kernelRadie * 2 + 1, kernelSize);
       }
     }
+    // Update LED progress display
+    int ledValue = calculate_led_value(y, outputHeight);
+    set_leds(ledValue);
   }
-
-  // ändring 3
-  // for (int i = 0; i < 76800; i += 2)
-  // {
-  //   pixelData[i] = tempPixelData[i];
-  //   pixelData[i + 1] = tempPixelData[i + 1]; // to trick the compiler into not using memcpy
-  // }
+  set_leds(0b1111111111);
 }
