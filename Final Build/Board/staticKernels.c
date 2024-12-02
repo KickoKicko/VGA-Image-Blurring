@@ -117,7 +117,7 @@ int staticEdgeDetectionKernel1(int *filterMatrix)
     filterMatrix[7] = 1;
     filterMatrix[8] = 1;
 
-    return 16;
+    return 10;
 }
 
 int staticEdgeDetectionKernel2(int *filterMatrix)
