@@ -12,7 +12,7 @@ const int outputWidth = 320;
 
 volatile char *VGA = (volatile char *)0x08000000;
 
-// works with floating values
+// works with floating values, however not on the board
 // int generateGaussianKernel(volatile int kernelRadie, int *filterMatrix)
 // {
 //   double sigma = 0.84089642;
@@ -83,51 +83,49 @@ uint8_t blurringKernel(uint8_t arr[], int filterMatrix[], int total, int arrSize
   greenTotal = (greenTotal + (total / 2)) / total;
   redTotal = (redTotal + (total / 2)) / total;
 
-  blueTotal = my_max(0, my_min(3, blueTotal));
-  greenTotal = my_max(0, my_min(7, greenTotal));
-  redTotal = my_max(0, my_min(7, redTotal));
+  blueTotal = max(0, min(3, blueTotal));
+  greenTotal = max(0, min(7, greenTotal));
+  redTotal = max(0, min(7, redTotal));
   return blueTotal + (greenTotal << 2) + (redTotal << 5);
 }
 
 int *matrixGenerator(int blurType, int kernelSize, volatile int kernelRadie, int *sumPointer, int *filterMatrix)
 {
   // Initialize the filterMatrix based on the blur type
-  if (blurType == 0) // BoxBlur
+  switch (blurType)
   {
+  case 0: // BoxBlur
     for (int i = 0; i < kernelSize; i++)
     {
       filterMatrix[i] = 1;
     }
-  }
-  else if (blurType == 1) // GaussianBlur
-  {
-    if (kernelRadie == 0)
+    break;
+
+  case 1: // GaussianBlur
+    switch (kernelRadie)
     {
+    case 0:
       *sumPointer = staticGaussianKernel0(filterMatrix);
-    }
-    else if (kernelRadie == 1)
-    {
+      break;
+    case 1:
+      *sumPointer = staticGaussianKernel1(filterMatrix);
+      break;
+    case 2:
       *sumPointer = staticGaussianKernel2(filterMatrix);
-    }
-    else if (kernelRadie == 2)
-    {
-      *sumPointer = staticGaussianKernel2(filterMatrix);
-    }
-    else if (kernelRadie == 3)
-    {
+      break;
+    case 3:
       *sumPointer = staticGaussianKernel3(filterMatrix);
-    }
-    else if (kernelRadie > 3)
-    {
+      break;
+    default:
       return 0;
     }
-  }
-  else if (blurType == 2) // Sharpen
-  {
+    break;
+
+  case 2: // Sharpen
     generateSharpenKernel(kernelRadie, filterMatrix);
-  }
-  else if (blurType == 3) // MotionBlur
-  {
+    break;
+
+  case 3: // MotionBlur
     for (int i = 0; i < kernelRadie * 2 + 1; i++)
     {
       for (int j = 0; j < kernelRadie * 2 + 1; j++)
@@ -142,6 +140,10 @@ int *matrixGenerator(int blurType, int kernelSize, volatile int kernelRadie, int
         }
       }
     }
+    break;
+
+  default:
+    return 0;
   }
 
   return filterMatrix;
@@ -177,9 +179,9 @@ void paddingKernel(volatile int kernelRadie, uint8_t *pixels, int x2, int y2, ui
 
 int calculate_led_value(int currentRow, int totalRows)
 {
-  double progress = (double)currentRow / totalRows; // Calculate progress percentage
-  int value = (int)(progress * 10);                 // Scale to 0-10 (1 LED per 10% increment)
-  int ledBinary = (1 << value) - 1;                 // Convert to binary representation for LEDs
+  double progress = (double)currentRow / totalRows;
+  int value = (int)(progress * 10);
+  int ledBinary = (1 << value) - 1;
   return ledBinary;
 }
 
@@ -218,21 +220,26 @@ void blurring(uint8_t *pixelData, int blurType, volatile int kernelRadie)
       }
 
       position = x + ((outputHeight - y) * outputWidth);
-      if (blurType == 0)
-      { // Box
+      switch (blurType)
+      {
+      case 0: // Box
         VGA[position] = blurringKernel(temp, filterMatrix, kernelSize, kernelSize);
-      }
-      else if (blurType == 1)
-      { // Gaussian
+        break;
+
+      case 1: // Gaussian
         VGA[position] = blurringKernel(temp, filterMatrix, sum, kernelSize);
-      }
-      else if (blurType == 2)
-      { // Sharpen
+        break;
+
+      case 2: // Sharpen
         VGA[position] = blurringKernel(temp, filterMatrix, 1, kernelSize);
-      }
-      else if (blurType == 3)
-      { // Motion
+        break;
+
+      case 3: // Motion
         VGA[position] = blurringKernel(temp, filterMatrix, kernelRadie * 2 + 1, kernelSize);
+        break;
+
+      default:
+        break;
       }
     }
     // Update LED progress display
