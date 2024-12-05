@@ -200,6 +200,10 @@ int calculate_led_value(int currentRow, int totalRows)
   return ledBinary;
 }
 
+void startBenchmarking()
+{
+}
+
 void blurring(uint8_t *pixelData, int blurType, volatile int kernelRadie)
 {
   int sum = 0;
