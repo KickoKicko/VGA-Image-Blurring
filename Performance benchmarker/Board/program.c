@@ -105,11 +105,7 @@ void displayMenu(void)
 int main(void)
 {
   init();
-  //unsigned int foo_time;
-  //asm volatile("csrw mcycle, x0");
   blurring(output_bmp, 0, 0);
-  //asm("csrr %0, mcycle" : "=r"(foo_time));
-  //print_dec(foo_time);
   while (1)
   {
     displayMenu();

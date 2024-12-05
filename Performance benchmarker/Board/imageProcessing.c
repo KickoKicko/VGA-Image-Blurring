@@ -203,7 +203,6 @@ int calculate_led_value(int currentRow, int totalRows)
 
 void startBenchmarking()
 {
-  // unsigned int cycles;
   asm volatile("csrw mcycle, x0");
   asm volatile("csrw minstret, x0");
   asm volatile("csrw mhpmcounter3 , x0");
@@ -218,7 +217,7 @@ void startBenchmarking()
 
 void bechmarkResults(int blurType, int kernelRadie)
 {
-  unsigned int cycles;
+  unsigned long long cycles;
   unsigned int instret;
   unsigned int mhpmcounter3;
   unsigned int mhpmcounter4;
@@ -229,7 +228,7 @@ void bechmarkResults(int blurType, int kernelRadie)
   unsigned int mhpmcounter9;
 
   asm volatile(
-      "csrr %0, mcycle\n" // Read mcycle
+      "csrr %0, mcycle\n"
       "csrr %1, minstret\n"
       "csrr %2, mhpmcounter3\n"
       "csrr %3, mhpmcounter4\n"

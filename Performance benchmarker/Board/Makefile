@@ -6,7 +6,7 @@ LINKER ?= $(SRC_DIR)/dtekv-script.lds
 
 TOOLCHAIN ?= riscv32-unknown-elf-
 CFLAGS ?= -Wall -nostdlib -O3 -mabi=ilp32 -march=rv32imzicsr
-
+#CFLAGS ?= -Wall -nostdlib -O0 -mabi=ilp32 -march=rv32imzicsr
 
 build: clean main.bin
 
