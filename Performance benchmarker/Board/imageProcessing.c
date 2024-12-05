@@ -224,10 +224,16 @@ void bechmarkResults(){
     "csrr %3, mhpmcounter4\n"    // Read minstret
     : "=r"(cycles), "=r"(instret), "=r"(mhpmcounter3),"=r"(mhpmcounter4) // Output operands
   );
+  print("\n");
+  print("\n Cycles:");
   print_dec(cycles);
+  print("\n instret:");
   print_dec(instret);
+  print("\n mhpmcounter3:");
   print_dec(mhpmcounter3);
+  print("\n mhpmcounter4:");
   print_dec(mhpmcounter4);
+  print("\n");
 }
 
 void blurring(uint8_t *pixelData, int blurType, volatile int kernelRadie)
