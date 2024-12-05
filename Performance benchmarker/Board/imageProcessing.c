@@ -3,6 +3,8 @@
 #include "imageProcessing.h"
 #include "customHelper.h"
 #include "staticKernels.h"
+#include "dtekv-lib.h"
+
 
 const int outputHeight = 240;
 const int outputWidth = 320;
@@ -200,8 +202,37 @@ int calculate_led_value(int currentRow, int totalRows)
   return ledBinary;
 }
 
+void startBenchmarking()
+{
+  //unsigned int cycles;
+  asm volatile("csrw mcycle, x0");
+  asm volatile("csrw minstret, x0");
+  asm volatile("csrw mhpmcounter3 , x0");
+  asm volatile("csrw mhpmcounter4 , x0");
+}
+
+void bechmarkResults(){
+  unsigned int cycles;
+  unsigned int instret;
+  unsigned int mhpmcounter3;
+  unsigned int mhpmcounter4;
+
+  asm volatile (
+    "csrr %0, mcycle\n"       // Read mcycle
+    "csrr %1, minstret\n" 
+    "csrr %2, mhpmcounter3\n"
+    "csrr %3, mhpmcounter4\n"    // Read minstret
+    : "=r"(cycles), "=r"(instret), "=r"(mhpmcounter3),"=r"(mhpmcounter4) // Output operands
+  );
+  print_dec(cycles);
+  print_dec(instret);
+  print_dec(mhpmcounter3);
+  print_dec(mhpmcounter4);
+}
+
 void blurring(uint8_t *pixelData, int blurType, volatile int kernelRadie)
 {
+  startBenchmarking();
   int sum = 0;
   int kernelSize = (kernelRadie * 2 + 1) * (kernelRadie * 2 + 1);
   int filterMatrix[kernelSize];
@@ -264,6 +295,7 @@ void blurring(uint8_t *pixelData, int blurType, volatile int kernelRadie)
     // Update LED progress display
     int ledValue = calculate_led_value(y, outputHeight);
     set_leds(ledValue);
+    bechmarkResults();
   }
   set_leds(0b1111111111);
 }
