@@ -5,7 +5,6 @@
 #include "staticKernels.h"
 #include "dtekv-lib.h"
 
-
 const int outputHeight = 240;
 const int outputWidth = 320;
 
@@ -204,35 +203,84 @@ int calculate_led_value(int currentRow, int totalRows)
 
 void startBenchmarking()
 {
-  //unsigned int cycles;
+  // unsigned int cycles;
   asm volatile("csrw mcycle, x0");
   asm volatile("csrw minstret, x0");
   asm volatile("csrw mhpmcounter3 , x0");
   asm volatile("csrw mhpmcounter4 , x0");
+  asm volatile("csrw mhpmcounter5 , x0");
+  asm volatile("csrw mhpmcounter6 , x0");
+  asm volatile("csrw mhpmcounter7 , x0");
+  asm volatile("csrw mhpmcounter8 , x0");
+  asm volatile("csrw mhpmcounter9 , x0");
+  asm volatile("csrw time , x0");
 }
 
-void bechmarkResults(){
+void bechmarkResults(int blurType, int kernelRadie)
+{
   unsigned int cycles;
   unsigned int instret;
   unsigned int mhpmcounter3;
   unsigned int mhpmcounter4;
+  unsigned int mhpmcounter5;
+  unsigned int mhpmcounter6;
+  unsigned int mhpmcounter7;
+  unsigned int mhpmcounter8;
+  unsigned int mhpmcounter9;
 
-  asm volatile (
-    "csrr %0, mcycle\n"       // Read mcycle
-    "csrr %1, minstret\n" 
-    "csrr %2, mhpmcounter3\n"
-    "csrr %3, mhpmcounter4\n"    // Read minstret
-    : "=r"(cycles), "=r"(instret), "=r"(mhpmcounter3),"=r"(mhpmcounter4) // Output operands
-  );
-  print("\n");
+  asm volatile(
+      "csrr %0, mcycle\n" // Read mcycle
+      "csrr %1, minstret\n"
+      "csrr %2, mhpmcounter3\n"
+      "csrr %3, mhpmcounter4\n"
+      "csrr %4, mhpmcounter5\n"
+      "csrr %5, mhpmcounter6\n"
+      "csrr %6, mhpmcounter7\n"
+      "csrr %7, mhpmcounter8\n"
+      "csrr %8, mhpmcounter9\n"
+
+      : "=r"(cycles), "=r"(instret), "=r"(mhpmcounter3), "=r"(mhpmcounter4), "=r"(mhpmcounter5), "=r"(mhpmcounter6), "=r"(mhpmcounter7), "=r"(mhpmcounter8), "=r"(mhpmcounter9));
+  if (blurType == 0)
+  {
+    print("\n Box blur");
+  }
+  else if (blurType == 1)
+  {
+    print("\n Gaussian blur");
+  }
+  else if (blurType == 2)
+  {
+    print("\n Sharpen");
+  }
+  else if (blurType == 3)
+  {
+    print("\n Motion blur");
+  }
+  else if (blurType == 4)
+  {
+    print("\n Edge detection");
+  }
+
+  print("\n KernelRadie:");
+  print_dec(kernelRadie);
   print("\n Cycles:");
   print_dec(cycles);
-  print("\n instret:");
+  print("\n Instructions:");
   print_dec(instret);
-  print("\n mhpmcounter3:");
+  print("\n Memory instructions:");
   print_dec(mhpmcounter3);
-  print("\n mhpmcounter4:");
+  print("\n I-chache misses:");
   print_dec(mhpmcounter4);
+  print("\n D-chache misses:");
+  print_dec(mhpmcounter5);
+  print("\n I-chache stalls:");
+  print_dec(mhpmcounter6);
+  print("\n D-chache stalls:");
+  print_dec(mhpmcounter7);
+  print("\n Data hazard stalls:");
+  print_dec(mhpmcounter8);
+  print("\n ALU operations:");
+  print_dec(mhpmcounter9);
   print("\n");
 }
 
@@ -301,7 +349,7 @@ void blurring(uint8_t *pixelData, int blurType, volatile int kernelRadie)
     // Update LED progress display
     int ledValue = calculate_led_value(y, outputHeight);
     set_leds(ledValue);
-    bechmarkResults();
   }
   set_leds(0b1111111111);
+  bechmarkResults(blurType, kernelRadie);
 }
