@@ -2,7 +2,6 @@
 #include <stdlib.h>
 
 #include "pixeldata.h"
-#include "loadingPixelData.h"
 
 #include "dtekv-lib.h"
 #include "imageProcessing.h"
