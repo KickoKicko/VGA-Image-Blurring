@@ -8,6 +8,7 @@
     "stdlib.h": "c",
     "pixeldata.h": "c",
     "loadingpixeldata.h": "c",
-    "statickernels.h": "c"
+    "statickernels.h": "c",
+    "imageprocessing.h": "c"
   }
 }
